@@ -10,6 +10,6 @@ const io_client = require('socket.io-client');
 
 method.get_client_socket = function(){
         return this._socket;
-}
+};
 
 module.exports = ClientManager;
