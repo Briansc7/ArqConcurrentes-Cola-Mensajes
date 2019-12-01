@@ -1,15 +1,11 @@
 'use strict'
 //requiriendo dependencias 
-const express = require('express')
-const socketio = require('socket.io')
-const http = require('http')
 
-
-
-const app = express()//instancia de express
-const server = http.createServer(app)//creando el server con http y express como handle request
-const io = socketio(server)//iniciando el server de socket.io
-const PORT = process.env.PORT || 3003
+var ServerManager = require('./serverManager.js');
+var serverManager = new ServerManager('http://localhost', 3003);
+const io = serverManager.get_io();
+const PORT = serverManager.get_port();
+const server = serverManager.get_server();
 
 var message_queue = []
 

@@ -1,25 +1,9 @@
 'use strict'
 //requiriendo dependencias 
-const express = require('express');
-const socketio = require('socket.io');
-const http = require('http');
+
 var ClientManager = require('./clientManager.js');
 var ServerManager = require('./serverManager.js');
 
-var io_client = require('socket.io-client');
-
-
-/*
-const app = express()//instancia de express
-const server = http.createServer(app)//creando el server con http y express como handle request
-const io = socketio(server)//iniciando el server de socket.io
-const PORT = process.env.PORT || 3002
-
- */
-
-
-
-//var socket_consumidor = io_client.connect('http://localhost:3003', {reconnect: true});
 
 var clientManager = new ClientManager('http://localhost', 3003);
 var socket_consumidor = clientManager.get_client_socket();

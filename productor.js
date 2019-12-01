@@ -1,5 +1,6 @@
-var io = require('socket.io-client');
-var socket_router = io.connect('http://localhost:3000', {reconnect: true});
+var ClientManager = require('./clientManager.js');
+var clientManager = new ClientManager('http://localhost', 3000);
+var socket_router = clientManager.get_client_socket();
 
 var message = {
     details: "mensaje de productor",
