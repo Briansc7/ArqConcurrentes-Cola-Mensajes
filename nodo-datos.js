@@ -5,7 +5,7 @@ var ClientManager = require('./clientManager.js');
 var ServerManager = require('./serverManager.js');
 
 
-var clientManager = new ClientManager('http://localhost', 3003);
+var clientManager = new ClientManager('http://localhost:3003');
 var socket_consumidor = clientManager.get_client_socket();
 
 var serverManager = new ServerManager(3002);

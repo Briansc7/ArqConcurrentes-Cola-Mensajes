@@ -2,10 +2,8 @@
 var method = ClientManager.prototype;
 const io_client = require('socket.io-client');
 
-    function ClientManager(url, port){
-        this._socket = io_client.connect(url+':'+port, {reconnect: true});
-        this._url = url;
-        this._port = port;
+    function ClientManager(url_port){
+        this._socket = io_client.connect(url_port, {reconnect: true});
     }
 
 method.get_client_socket = function(){

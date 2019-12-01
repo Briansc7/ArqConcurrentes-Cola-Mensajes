@@ -2,7 +2,7 @@
 //requiriendo dependencias 
 
 var ClientManager = require('./clientManager.js');
-var clientManager = new ClientManager('http://localhost', 3002);
+var clientManager = new ClientManager('http://localhost:3002');
 var socket_nodo_datos = clientManager.get_client_socket();
 
 var ServerManager = require('./serverManager.js');
@@ -67,3 +67,4 @@ io.on('connection', function (socket){
      console.log("Message sent to server");
 
  }
+

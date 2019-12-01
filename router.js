@@ -2,7 +2,7 @@
 //requiriendo dependencias 
 
 var ClientManager = require('./clientManager.js');
-var clientManager = new ClientManager('http://localhost', 3001);
+var clientManager = new ClientManager('http://localhost:3001');
 var socket_orquestador = clientManager.get_client_socket();
 
 var ServerManager = require('./serverManager.js');
