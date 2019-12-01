@@ -4,7 +4,7 @@ const express = require('express')
 const socketio = require('socket.io')
 const http = require('http')
 
-function ServerManager(url, port){
+function ServerManager(port){
     this.app = express()//instancia de express
     this.server = http.createServer(this.app)//creando el server con http y express como handle request
     this.io = socketio(this.server)//iniciando el server de socket.io

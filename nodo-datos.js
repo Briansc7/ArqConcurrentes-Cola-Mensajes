@@ -8,7 +8,7 @@ var ServerManager = require('./serverManager.js');
 var clientManager = new ClientManager('http://localhost', 3003);
 var socket_consumidor = clientManager.get_client_socket();
 
-var serverManager = new ServerManager('http://localhost', 3002);
+var serverManager = new ServerManager(3002);
 const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();

@@ -2,7 +2,7 @@
 //requiriendo dependencias 
 
 var ServerManager = require('./serverManager.js');
-var serverManager = new ServerManager('http://localhost', 3003);
+var serverManager = new ServerManager(3003);
 const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();
