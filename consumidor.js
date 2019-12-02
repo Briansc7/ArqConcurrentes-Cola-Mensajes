@@ -40,7 +40,7 @@ socket_nodo_datos.on('HANDSHAKE', function (from) {
 
             })
         }
-
+/*
     if (from == 'PRODUCER') {
 
         socket_nodo_datos.on('MESSAGE', (msg) => {
@@ -54,7 +54,7 @@ socket_nodo_datos.on('HANDSHAKE', function (from) {
             })
 
         })
-    }
+    }*/
 });
 
 /*
@@ -64,8 +64,8 @@ server.listen(PORT, () => {
 })
 
  */
-/*
-io.on('connection', function (socket){
+
+socket_nodo_datos.on('connection', function (socket){
     console.log('Client '+socket.id+ ' connected!');
  
    socket.on('HANDSHAKE', function (from) {
@@ -76,7 +76,7 @@ io.on('connection', function (socket){
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);
         writePromise(msg).then((resp) => {
-          console.log("Mensaje enviado al nodo correspondiente segun Topic");
+          console.log("mensaje del productor atendido");
 
         }).catch((err) => {
 
@@ -89,7 +89,7 @@ io.on('connection', function (socket){
  
  });
 
- */
+
 
 
 

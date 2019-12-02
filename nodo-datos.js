@@ -25,7 +25,7 @@ io.on('connection', function (socket){
 
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);
-        writePromise(msg).then((resp) => {
+        writePromise(msg, socket).then((resp) => {
           console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
         }).catch((err) => {
@@ -38,7 +38,7 @@ io.on('connection', function (socket){
      else if(from == 'CONSUMER'){
          socket.on('MESSAGE', (msg) => {
              console.log("Message: "+msg.details+" Topic: "+msg.topic);
-             writePromise2(message2).then((resp) => {
+             writePromise2(message2, socket).then((resp) => {
                  console.log("Mensaje enviado al consumidor");
 
              }).catch((err) => {
@@ -59,27 +59,27 @@ io.on('connection', function (socket){
   });*/
 
 
- function writePromise (msg) {
+ function writePromise (msg, socket) {
 
     return new Promise((resolve, reject) => {
-        send(msg);
+        send(msg, socket);
         resolve("write promise done");
 
 
     });
  }
 
-function writePromise2 (msg) {
+function writePromise2 (msg, socket) {
 
     return new Promise((resolve, reject) => {
-        send2(msg);
+        send2(msg, socket);
         resolve("write promise done");
 
 
     });
 }
 
-function send(message) {
+function send(message, socket) {
     io.emit('HANDSHAKE', 'PRODUCER');
     io.emit('MESSAGE', message);
     console.log("Message sent to server");
@@ -92,9 +92,9 @@ var message2 = {
     topic: 'Alerts'
 }
 
-function send2(message) {
-    io.emit('HANDSHAKE', 'COLA');
-    io.emit('MESSAGE', message);
+function send2(message, socket) {
+    socket.emit('HANDSHAKE', 'COLA');
+    socket.emit('MESSAGE', message);
     console.log("Message sent to server");
 
 }
