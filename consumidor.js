@@ -1,11 +1,11 @@
 'use strict'
 //requiriendo dependencias
 
-var ClientManager = require('./clientManager.js');
+var ClientManager = require('./utilities/clientManager.js');
 var clientManager = new ClientManager('http://localhost:3002');
 var socket_nodo_datos = clientManager.get_client_socket();
 
-var MsgSender = require('./msgSender.js');
+var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
 

@@ -1,14 +1,14 @@
 'use strict'
 //requiriendo dependencias 
 
-var ServerManager = require('./serverManager.js');
+var ServerManager = require('./utilities/serverManager.js');
 
 var serverManager = new ServerManager(3002);
 const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();
 
-var MsgSender = require('./msgSender.js');
+var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
 var socket_consumer;
