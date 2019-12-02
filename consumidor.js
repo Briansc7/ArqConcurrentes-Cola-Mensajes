@@ -5,6 +5,9 @@ var ClientManager = require('./clientManager.js');
 var clientManager = new ClientManager('http://localhost:3002');
 var socket_nodo_datos = clientManager.get_client_socket();
 
+var MsgSender = require('./msgSender.js');
+var msgSender = new MsgSender();
+
 
 var message_queue = []
 
@@ -88,8 +91,10 @@ var message = {
 }
 
 function send() {
-    socket_nodo_datos.emit('HANDSHAKE', 'CONSUMER');
+    /*socket_nodo_datos.emit('HANDSHAKE', 'CONSUMER');
     socket_nodo_datos.emit('MESSAGE', message);
-    console.log("Message sent to server");
+    console.log("Message sent to server");*/
+
+    msgSender.send(message, 'CONSUMER', socket_nodo_datos)
 
 }
