@@ -13,6 +13,10 @@ const server = serverManager.get_server();
 
 var message_queue = []
 
+var hashmap_queue = {}
+
+hashmap_queue['Alerts'] = 'http://localhost:3002';
+
 //corriendo el servidor
 server.listen(PORT, () => {
   console.log(`Server running in http://localhost:${PORT}`)
@@ -68,3 +72,6 @@ io.on('connection', function (socket){
 
  }
 
+ function get_direction_queue(topic){
+      return hashmap_queue[topic];
+ }

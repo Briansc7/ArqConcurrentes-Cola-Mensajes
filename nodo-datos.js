@@ -1,12 +1,7 @@
 'use strict'
 //requiriendo dependencias 
 
-var ClientManager = require('./clientManager.js');
 var ServerManager = require('./serverManager.js');
-
-
-var clientManager = new ClientManager('http://localhost:3003');
-var socket_consumidor = clientManager.get_client_socket();
 
 var serverManager = new ServerManager(3002);
 const io = serverManager.get_io();
@@ -40,15 +35,28 @@ io.on('connection', function (socket){
 
         })
      }
+     else if(from == 'CONSUMER'){
+         socket.on('MESSAGE', (msg) => {
+             console.log("Message: "+msg.details+" Topic: "+msg.topic);
+             writePromise2(message2).then((resp) => {
+                 console.log("Mensaje enviado al consumidor");
+
+             }).catch((err) => {
+
+                 console.log(err);
+             })
+
+         })
+       }
    });
  
  });
-
+/*
   // Add a connect listener
   socket_consumidor.on('connect', function (socket_consumidor) {
       console.log('Connected!');
 
-  });
+  });*/
 
 
  function writePromise (msg) {
@@ -59,13 +67,34 @@ io.on('connection', function (socket){
 
 
     });
-
-
  }
 
+function writePromise2 (msg) {
+
+    return new Promise((resolve, reject) => {
+        send2(msg);
+        resolve("write promise done");
+
+
+    });
+}
+
 function send(message) {
-    socket_consumidor.emit('HANDSHAKE', 'PRODUCER');
-    socket_consumidor.emit('MESSAGE', message);
+    io.emit('HANDSHAKE', 'PRODUCER');
+    io.emit('MESSAGE', message);
+    console.log("Message sent to server");
+
+}
+
+var message2 = {
+    details: "mensaje de nodo datos",
+    date: new Date(),
+    topic: 'Alerts'
+}
+
+function send2(message) {
+    io.emit('HANDSHAKE', 'COLA');
+    io.emit('MESSAGE', message);
     console.log("Message sent to server");
 
 }
