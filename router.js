@@ -95,12 +95,3 @@ socket_orquestador.on('connect', function (socket_orquestador) {
 
     
  }
-/*
-function send(message) {
-    socket_orquestador.emit('HANDSHAKE', 'PRODUCER');
-    socket_orquestador.emit('MESSAGE', message);
-    console.log("Message sent to server");
-
-}
-
- */

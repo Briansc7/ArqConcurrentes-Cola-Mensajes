@@ -75,33 +75,4 @@ io.on('connection', function (socket){
 
     });
  }
-/*
-function writePromise2 (msg, socket) {
 
-    return new Promise((resolve, reject) => {
-        send2(msg, socket);
-        resolve("write promise done");
-
-
-    });
-}*/
-/*
-function send(message, socket) {
-    socket.emit('HANDSHAKE', 'PRODUCER');
-    socket.emit('MESSAGE', message);
-    console.log("Message sent to server");
-
-}
-
- */
-
-
-/*
-function send2(message, socket) {
-    socket.emit('HANDSHAKE', 'COLA');
-    socket.emit('MESSAGE', message);
-    console.log("Message sent to server");
-
-}
-
- */

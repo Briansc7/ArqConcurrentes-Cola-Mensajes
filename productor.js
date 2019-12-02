@@ -19,15 +19,7 @@ socket_router.on('connect', function (socket) {
     msgSender.send(message, 'PRODUCER', socket_router);
 
 });
-/*
-function send() {
-    socket_router.emit('HANDSHAKE', 'PRODUCER');
-    socket_router.emit('MESSAGE', message);
-    console.log("Message sent to server");
 
-}
-
- */
 
 
 

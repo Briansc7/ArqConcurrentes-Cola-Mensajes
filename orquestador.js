@@ -92,15 +92,6 @@ io.on('connection', function (socket){
   }
 
 
-/*
- function send(message, handshake, socket) {
-     socket.emit('HANDSHAKE', handshake);
-     socket.emit('MESSAGE', message);
-     console.log("Message sent to server");
-
- }
-
- */
 
  function get_direction_queue(topic){
       return hashmap_queue[topic];
