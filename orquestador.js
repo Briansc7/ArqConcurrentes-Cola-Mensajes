@@ -11,8 +11,6 @@ const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();
 
-var message_queue = []
-
 var hashmap_queue = {}
 
 hashmap_queue['Alerts'] = 'http://localhost:3002';
@@ -32,7 +30,7 @@ io.on('connection', function (socket){
 
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);
-        writePromise(msg).then((resp) => {
+        writePromise(msg, 'PRODUCER', socket_nodo_datos).then((resp) => {
           console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
         }).catch((err) => {
@@ -42,6 +40,30 @@ io.on('connection', function (socket){
 
         })
      }
+
+       if (from == 'SUBSCRIBER') {
+
+           socket.on('MESSAGE', (msg) => {
+               console.log("Message: "+msg.details+" Topic: "+msg.topic);
+
+               var msg_dir_queue = {
+                   details: "respuesta direccion cola",
+                   date: new Date(),
+                   dir: ""
+               };
+
+               msg_dir_queue.dir = get_direction_queue(msg.topic);
+
+               writePromise(msg_dir_queue, 'DIR_QUEUE', socket).then((resp) => {
+                   console.log("Mensaje enviado al nodo correspondiente segun Topic");
+
+               }).catch((err) => {
+
+                   console.log(err);
+               })
+
+           })
+       }
    });
  
  });
@@ -53,10 +75,10 @@ io.on('connection', function (socket){
  });
 
 
-  function writePromise (msg) {
+  function writePromise (msg, handshake, socket) {
 
      return new Promise((resolve, reject) => {
-         send(msg);
+         send(msg, handshake, socket);
          resolve("write promise done");
 
 
@@ -65,9 +87,11 @@ io.on('connection', function (socket){
 
   }
 
- function send(message) {
-     socket_nodo_datos.emit('HANDSHAKE', 'PRODUCER');
-     socket_nodo_datos.emit('MESSAGE', message);
+
+
+ function send(message, handshake, socket) {
+     socket.emit('HANDSHAKE', handshake);
+     socket.emit('MESSAGE', message);
      console.log("Message sent to server");
 
  }

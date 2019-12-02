@@ -6,7 +6,7 @@ var message = {
     details: "mensaje de productor",
     date: new Date(),
     topic: 'Alerts'
-}
+};
 
 
 // Add a connect listener

@@ -38,6 +38,35 @@ io.on('connection', function (socket){
 
         })
      }
+
+     if (from == 'SUBSCRIBER'){
+         socket.on('MESSAGE', (msg) => {
+             console.log("Message: "+msg.details+" Topic: "+msg.topic);
+             writePromise(msg).then((resp) => {
+                 console.log("Mensaje de suscripcion enviado al orquestador");
+
+             }).catch((err) => {
+
+                 console.log(err);
+             })
+
+         })
+     }
+
+       if (from == 'DIR_QUEUE'){
+           socket.on('MESSAGE', (msg) => {
+               console.log("Message: "+msg.details+" Topic: "+msg.topic);
+               writePromise(msg).then((resp) => {
+                   console.log("Mensaje de suscripcion enviado al orquestador");
+
+               }).catch((err) => {
+
+                   console.log(err);
+               })
+
+           })
+       }
+
    });
  
  });
