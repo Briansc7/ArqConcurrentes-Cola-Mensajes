@@ -54,12 +54,7 @@ io.on('connection', function (socket){
    });
  
  });
-/*
-  // Add a connect listener
-  socket_consumidor.on('connect', function (socket_consumidor) {
-      console.log('Connected!');
 
-  });*/
 
 
  function writePromise (msg, socket) {
