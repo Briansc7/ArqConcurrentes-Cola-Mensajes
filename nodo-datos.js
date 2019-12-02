@@ -8,6 +8,8 @@ const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();
 
+var socket_consumer;
+
 var message_queue = [];
 
 //corriendo el servidor
@@ -25,7 +27,7 @@ io.on('connection', function (socket){
 
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);
-        writePromise(msg, socket).then((resp) => {
+        writePromise(msg, socket_consumer).then((resp) => {
           console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
         }).catch((err) => {
@@ -37,6 +39,7 @@ io.on('connection', function (socket){
      }
      else if(from == 'CONSUMER'){
          socket.on('MESSAGE', (msg) => {
+             socket_consumer = socket;
              console.log("Message: "+msg.details+" Topic: "+msg.topic);
              writePromise2(message2, socket).then((resp) => {
                  console.log("Mensaje enviado al consumidor");
@@ -80,8 +83,8 @@ function writePromise2 (msg, socket) {
 }
 
 function send(message, socket) {
-    io.emit('HANDSHAKE', 'PRODUCER');
-    io.emit('MESSAGE', message);
+    socket.emit('HANDSHAKE', 'PRODUCER');
+    socket.emit('MESSAGE', message);
     console.log("Message sent to server");
 
 }
