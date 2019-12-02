@@ -8,6 +8,9 @@ const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();
 
+var MsgSender = require('./msgSender.js');
+var msgSender = new MsgSender();
+
 var socket_consumer;
 
 var message_queue = [];
@@ -27,7 +30,7 @@ io.on('connection', function (socket){
 
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);
-        writePromise(msg, socket_consumer).then((resp) => {
+        writePromise(msg, 'PRODUCER', socket_consumer).then((resp) => {
           console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
         }).catch((err) => {
@@ -41,7 +44,12 @@ io.on('connection', function (socket){
          socket.on('MESSAGE', (msg) => {
              socket_consumer = socket;
              console.log("Message: "+msg.details+" Topic: "+msg.topic);
-             writePromise2(message2, socket).then((resp) => {
+             var message2 = {
+                 details: "mensaje de nodo datos",
+                 date: new Date(),
+                 topic: 'Alerts'
+             };
+             writePromise(message2, 'COLA', socket).then((resp) => {
                  console.log("Mensaje enviado al consumidor");
 
              }).catch((err) => {
@@ -57,16 +65,17 @@ io.on('connection', function (socket){
 
 
 
- function writePromise (msg, socket) {
+ function writePromise (msg, handshake, socket) {
 
     return new Promise((resolve, reject) => {
-        send(msg, socket);
+        //send(msg, socket);
+        msgSender.send(msg,handshake, socket);
         resolve("write promise done");
 
 
     });
  }
-
+/*
 function writePromise2 (msg, socket) {
 
     return new Promise((resolve, reject) => {
@@ -75,8 +84,8 @@ function writePromise2 (msg, socket) {
 
 
     });
-}
-
+}*/
+/*
 function send(message, socket) {
     socket.emit('HANDSHAKE', 'PRODUCER');
     socket.emit('MESSAGE', message);
@@ -84,15 +93,15 @@ function send(message, socket) {
 
 }
 
-var message2 = {
-    details: "mensaje de nodo datos",
-    date: new Date(),
-    topic: 'Alerts'
-}
+ */
 
+
+/*
 function send2(message, socket) {
     socket.emit('HANDSHAKE', 'COLA');
     socket.emit('MESSAGE', message);
     console.log("Message sent to server");
 
 }
+
+ */

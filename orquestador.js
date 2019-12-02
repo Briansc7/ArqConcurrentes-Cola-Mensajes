@@ -11,7 +11,10 @@ const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();
 
-var hashmap_queue = {}
+var MsgSender = require('./msgSender.js');
+var msgSender = new MsgSender();
+
+var hashmap_queue = {};
 
 hashmap_queue['Alerts'] = 'http://localhost:3002';
 
@@ -78,7 +81,8 @@ io.on('connection', function (socket){
   function writePromise (msg, handshake, socket) {
 
      return new Promise((resolve, reject) => {
-         send(msg, handshake, socket);
+         //send(msg, handshake, socket);
+         msgSender.send(msg, handshake, socket);
          resolve("write promise done");
 
 
@@ -88,13 +92,15 @@ io.on('connection', function (socket){
   }
 
 
-
+/*
  function send(message, handshake, socket) {
      socket.emit('HANDSHAKE', handshake);
      socket.emit('MESSAGE', message);
      console.log("Message sent to server");
 
  }
+
+ */
 
  function get_direction_queue(topic){
       return hashmap_queue[topic];

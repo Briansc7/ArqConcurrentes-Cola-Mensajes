@@ -11,7 +11,12 @@ const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();
 
-var message_queue = []
+var MsgSender = require('./msgSender.js');
+var msgSender = new MsgSender();
+
+var socket_consumidor;
+
+var message_queue = [];
 
 //corriendo el servidor
 server.listen(PORT, () => {
@@ -28,7 +33,7 @@ io.on('connection', function (socket){
 
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);
-        writePromise(msg).then((resp) => {
+        writePromise(msg, 'PRODUCER', socket_orquestador).then((resp) => {
           console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
         }).catch((err) => {
@@ -42,7 +47,8 @@ io.on('connection', function (socket){
      if (from == 'SUBSCRIBER'){
          socket.on('MESSAGE', (msg) => {
              console.log("Message: "+msg.details+" Topic: "+msg.topic);
-             writePromise(msg).then((resp) => {
+             socket_consumidor = socket;
+             writePromise(msg, 'SUBSCRIBER', socket_orquestador).then((resp) => {
                  console.log("Mensaje de suscripcion enviado al orquestador");
 
              }).catch((err) => {
@@ -56,7 +62,7 @@ io.on('connection', function (socket){
        if (from == 'DIR_QUEUE'){
            socket.on('MESSAGE', (msg) => {
                console.log("Message: "+msg.details+" Topic: "+msg.topic);
-               writePromise(msg).then((resp) => {
+               writePromise(msg, 'DIR_QUEUE', socket_consumidor).then((resp) => {
                    console.log("Mensaje de suscripcion enviado al orquestador");
 
                }).catch((err) => {
@@ -77,10 +83,11 @@ socket_orquestador.on('connect', function (socket_orquestador) {
 
 });
 
- function writePromise (msg) {
+ function writePromise (msg, handshake, socket) {
 
     return new Promise((resolve, reject) => {
-        send(msg);
+        //send(msg);
+        msgSender.send(msg, handshake, socket);
         resolve("write promise done");
 
 
@@ -88,10 +95,12 @@ socket_orquestador.on('connect', function (socket_orquestador) {
 
     
  }
-
+/*
 function send(message) {
     socket_orquestador.emit('HANDSHAKE', 'PRODUCER');
     socket_orquestador.emit('MESSAGE', message);
     console.log("Message sent to server");
 
 }
+
+ */

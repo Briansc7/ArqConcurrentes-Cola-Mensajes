@@ -11,9 +11,16 @@ var msgSender = new MsgSender();
 
 var message_queue = []
 
-socket_nodo_datos.on('connect', function (socket_nodo_datos) {
+socket_nodo_datos.on('connect', function (socket) {
     console.log('Connected!');
-    send();
+
+    var message = {
+        details: "mensaje de consumidor",
+        date: new Date(),
+        topic: 'Alerts'
+    };
+
+    msgSender.send(message, 'CONSUMER', socket_nodo_datos);
 
 });
 
@@ -84,17 +91,5 @@ socket_nodo_datos.on('connection', function (socket){
      return 'http://localhost:3002';
  }
 
-var message = {
-    details: "mensaje de consumidor",
-    date: new Date(),
-    topic: 'Alerts'
-}
 
-function send() {
-    /*socket_nodo_datos.emit('HANDSHAKE', 'CONSUMER');
-    socket_nodo_datos.emit('MESSAGE', message);
-    console.log("Message sent to server");*/
 
-    msgSender.send(message, 'CONSUMER', socket_nodo_datos)
-
-}
