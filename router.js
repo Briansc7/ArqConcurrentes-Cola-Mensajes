@@ -7,11 +7,12 @@
 // 3) Orquestador --> recibe mensaje de respuesta con el Endpoint del nodo al cual se tiene que conectar el Consumidor
 
 var ClientManager = require('./utilities/clientManager.js');
-var clientManager = new ClientManager('http://localhost:3001');
+var config = require('./config/config.json');
+var clientManager = new ClientManager(config.orquestador_endpoint+config.orquestador_port);
 var socket_orquestador = clientManager.get_client_socket();
 
 var ServerManager = require('./utilities/serverManager.js');
-var serverManager = new ServerManager(3000);
+var serverManager = new ServerManager(config.router_port);
 const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();

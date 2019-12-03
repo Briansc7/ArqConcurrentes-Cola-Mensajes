@@ -2,11 +2,12 @@
 //requiriendo dependencias 
 
 var ClientManager = require('./utilities/clientManager.js');
-var clientManager = new ClientManager('http://localhost:3002');
+var config = require('./config/config.json');
+var clientManager = new ClientManager(config.nodo_datos_endpoint+config.nodo_datos_port);
 var socket_nodo_datos = clientManager.get_client_socket();
 
 var ServerManager = require('./utilities/serverManager.js');
-var serverManager = new ServerManager(3001);
+var serverManager = new ServerManager(config.orquestador_port);
 const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();

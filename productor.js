@@ -1,5 +1,6 @@
 var ClientManager = require('./utilities/clientManager.js');
-var clientManager = new ClientManager('http://localhost:3000');
+var config = require('./config/config.json');
+var clientManager = new ClientManager(config.router_endpoint+config.router_port);
 var socket_router = clientManager.get_client_socket();
 
 var MsgSender = require('./utilities/msgSender.js');
