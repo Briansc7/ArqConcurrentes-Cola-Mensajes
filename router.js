@@ -62,10 +62,12 @@ io.on('connection', function (socket){
                  console.log(err);
              })
 
+
+
          })
      }
 
-       if (from == 'DIR_QUEUE'){
+       /*if (from == 'DIR_QUEUE'){
            socket.on('MESSAGE', (msg) => {
                console.log("Message: "+msg.details+" Endpoint de Topic: "+msg.dir);
                writePromise(msg, 'DIR_QUEUE', socket_consumidor).then((resp) => {
@@ -77,11 +79,29 @@ io.on('connection', function (socket){
                })
 
            })
-       }
+       }*/
 
    });
  
  });
+
+socket_orquestador.on('HANDSHAKE', function (from) {
+    console.log(from+ ' connected!');
+
+    if (from == 'DIR_QUEUE'){
+        socket_orquestador.on('MESSAGE', (msg) => {
+            console.log("Message: "+msg.details+" Endpoint de Topic: "+msg.dir);
+            writePromise(msg, 'DIR_QUEUE', socket_consumidor).then((resp) => {
+                console.log("Endpoint enviado al Consumidor!");
+
+            }).catch((err) => {
+
+                console.log(err);
+            })
+
+        })
+    }
+});
 
 // Add a connect listener
 socket_orquestador.on('connect', function (socket_orquestador) {

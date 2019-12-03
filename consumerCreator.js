@@ -1,16 +1,15 @@
 
 
 var ClientManager = require('./utilities/clientManager.js');
-var clientManager = new ClientManager('http://localhost:3001');
+var clientManager = new ClientManager('http://localhost:3000');
 var socket_router = clientManager.get_client_socket();
+
+var MsgSender = require('./utilities/msgSender.js');
+var msgSender = new MsgSender();
 
 var fork = require('child_process').fork;
 var child;
 
-var child = fork('./consumidor.js',
-    [get_direction_queue()]
-);
-/*
 socket_router.on('connect', function (socket) {
     console.log('Connected!');
 
@@ -20,32 +19,32 @@ socket_router.on('connect', function (socket) {
         topic: 'Alerts'
     };
 
-    msgSender.send(message, 'CONSUMER', socket_router);
+    msgSender.send(message, 'SUBSCRIBER', socket_router);
 
 });
 
 
-socket_router.on('connection', function (socket){
-    console.log('Client '+socket.id+ ' connected!');
 
-    socket.on('HANDSHAKE', function (from) {
+socket_router.on('HANDSHAKE', function (from) {
         console.log(from+ ' connected!');
 
         if (from == 'DIR_QUEUE') {
 
-            socket.on('MESSAGE', (msg) => {
+            socket_router.on('MESSAGE', (msg) => {
                 console.log("Message: "+msg.details+" Topic: "+msg.topic);
 
-                child = fork('./consumidor.js', []);
+                child = fork('./consumidor.js',
+                    [msg.dir]
+                );
 
             })
         }
     });
 
-});
 
 
- */
+
+
 
 function get_direction_queue(){
     return 'http://localhost:3002';
