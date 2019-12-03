@@ -58,7 +58,7 @@ io.on('connection', function (socket){
                msg_dir_queue.dir = get_direction_queue(msg.topic);
 
                writePromise(msg_dir_queue, 'DIR_QUEUE', socket).then((resp) => {
-                   console.log("Mensaje enviado al nodo correspondiente segun Topic");
+                   console.log("Mensaje de retorno enviado al Router con el Endpoint");
 
                }).catch((err) => {
 

@@ -1,6 +1,11 @@
 'use strict'
 //requiriendo dependencias 
 
+// ROUTER RECIBE MENSAJES DE:
+// 1) Productor --> reenvia al Orquestador un mensaje que tiene Topic y Contenido
+// 2) Consumidor --> reenvia al Orquestador el Topic al cual se quiere subscribir
+// 3) Orquestador --> recibe mensaje de respuesta con el Endpoint del nodo al cual se tiene que conectar el Consumidor
+
 var ClientManager = require('./utilities/clientManager.js');
 var clientManager = new ClientManager('http://localhost:3001');
 var socket_orquestador = clientManager.get_client_socket();
@@ -34,7 +39,8 @@ io.on('connection', function (socket){
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);
         writePromise(msg, 'PRODUCER', socket_orquestador).then((resp) => {
-          console.log("Mensaje enviado al nodo correspondiente segun Topic");
+          console.log("Router envio mensaje de Productor al Orquestador!");
+          
 
         }).catch((err) => {
 
@@ -61,9 +67,9 @@ io.on('connection', function (socket){
 
        if (from == 'DIR_QUEUE'){
            socket.on('MESSAGE', (msg) => {
-               console.log("Message: "+msg.details+" Topic: "+msg.topic);
+               console.log("Message: "+msg.details+" Endpoint de Topic: "+msg.dir);
                writePromise(msg, 'DIR_QUEUE', socket_consumidor).then((resp) => {
-                   console.log("Mensaje de suscripcion enviado al orquestador");
+                   console.log("Endpoint enviado al Consumidor!");
 
                }).catch((err) => {
 
@@ -85,10 +91,13 @@ socket_orquestador.on('connect', function (socket_orquestador) {
 
  function writePromise (msg, handshake, socket) {
 
+    // Aca creo que estaria bueno dividir en dos promesas distintas. Una para mandar mensaje de Productor
+    // y otra para Consumidor, ya que en el caso del consumi
+
     return new Promise((resolve, reject) => {
         //send(msg);
         msgSender.send(msg, handshake, socket);
-        resolve("write promise done");
+        resolve("Router envio mensaje a Orquestador!");
 
 
     });

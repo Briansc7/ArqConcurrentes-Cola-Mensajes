@@ -7,10 +7,10 @@ var msgSender = new MsgSender();
 
 
 
-
+// PRODUCTOR SE CONECTA A ROUTER Y LE MANDA MENSAJE. Y creo que muere ahi
 // Add a connect listener
 socket_router.on('connect', function (socket) {
-    console.log('Connected!');
+    console.log('Productor se conecto a Router!');
     var message = {
         details: "mensaje de productor",
         date: new Date(),
