@@ -2,15 +2,17 @@
 //requiriendo dependencias
 
 var ClientManager = require('./utilities/clientManager.js');
-var config = require('./config/config.json');
-var clientManager = new ClientManager(config.nodo_datos_endpoint+config.nodo_datos_port);
+
+const process = require('process');
+var clientManager = new ClientManager(process.argv[2]);
+
 var socket_nodo_datos = clientManager.get_client_socket();
 
 var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
+var message_queue = [];
 
-var message_queue = []
 
 socket_nodo_datos.on('connect', function (socket) {
     console.log('Connected!');
@@ -24,6 +26,8 @@ socket_nodo_datos.on('connect', function (socket) {
     msgSender.send(message, 'CONSUMER', socket_nodo_datos);
 
 });
+
+
 
 
 socket_nodo_datos.on('HANDSHAKE', function (from) {
@@ -73,9 +77,6 @@ socket_nodo_datos.on('connection', function (socket){
 
 
 
-
-
-
  function writePromise (msg) {
 
     return new Promise((resolve, reject) => {
@@ -88,9 +89,7 @@ socket_nodo_datos.on('connection', function (socket){
     
  }
 
- function get_direction_queue(){
-     return 'http://localhost:3002';
- }
+
 
 
 
