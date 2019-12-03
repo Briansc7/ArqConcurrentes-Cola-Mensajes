@@ -57,7 +57,7 @@ socket_nodo_datos.on('connection', function (socket){
    socket.on('HANDSHAKE', function (from) {
      console.log(from+ ' connected!');
 
-     if (from == 'PRODUCER') {
+     if (from == 'PRODUCER-from-datos') {
 
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);

@@ -27,11 +27,11 @@ io.on('connection', function (socket){
    socket.on('HANDSHAKE', function (from) {
      console.log(from+ ' connected!');
 
-     if (from == 'PRODUCER') {
+     if (from == 'PRODUCER-from-orquestador') {
 
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);
-        writePromise(msg, 'PRODUCER', socket_consumer).then((resp) => {
+        writePromise(msg, 'PRODUCER-from-datos', socket_consumer).then((resp) => {
           console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
         }).catch((err) => {

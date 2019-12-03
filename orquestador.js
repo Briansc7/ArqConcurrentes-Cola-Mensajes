@@ -30,11 +30,11 @@ io.on('connection', function (socket){
    socket.on('HANDSHAKE', function (from) {
      console.log(from+ ' connected!');
 
-     if (from == 'PRODUCER') {
+     if (from == 'PRODUCER-from-router') {
 
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);
-        writePromise(msg, 'PRODUCER', socket_nodo_datos).then((resp) => {
+        writePromise(msg, 'PRODUCER-from-orquestador', socket_nodo_datos).then((resp) => {
           console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
         }).catch((err) => {
@@ -53,6 +53,7 @@ io.on('connection', function (socket){
                var msg_dir_queue = {
                    details: "respuesta direccion cola",
                    date: new Date(),
+                   topic: msg.topic,
                    dir: ""
                };
 

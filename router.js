@@ -39,7 +39,7 @@ io.on('connection', function (socket){
 
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);
-        writePromise(msg, 'PRODUCER', socket_orquestador).then((resp) => {
+        writePromise(msg, 'PRODUCER-from-router', socket_orquestador).then((resp) => {
           console.log("Router envio mensaje de Productor al Orquestador!");
           
 
