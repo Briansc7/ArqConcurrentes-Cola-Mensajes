@@ -2,7 +2,8 @@
 //requiriendo dependencias
 
 var ClientManager = require('./utilities/clientManager.js');
-var clientManager = new ClientManager('http://localhost:3002');
+var config = require('./config/config.json');
+var clientManager = new ClientManager(config.nodo_datos_endpoint+config.nodo_datos_port);
 var socket_nodo_datos = clientManager.get_client_socket();
 
 var MsgSender = require('./utilities/msgSender.js');

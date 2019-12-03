@@ -2,8 +2,9 @@
 //requiriendo dependencias 
 
 var ServerManager = require('./utilities/serverManager.js');
+var config = require('./config/config.json');
 
-var serverManager = new ServerManager(3002);
+var serverManager = new ServerManager(config.nodo_datos_port);
 const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();
