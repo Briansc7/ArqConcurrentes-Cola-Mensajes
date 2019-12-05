@@ -30,6 +30,53 @@ io.on('connection', function (socket){
    socket.on('HANDSHAKE', function (from) {
      console.log(from+ ' connected!');
 
+     switch (from) {
+         case 'PRODUCER-from-router':
+
+             socket.on('MESSAGE', (msg) => {
+                 console.log("Message: "+msg.details+" Topic: "+msg.topic);
+                 writePromise(msg, 'PRODUCER-from-orquestador', socket_nodo_datos).then((resp) => {
+                     console.log("Mensaje enviado al nodo correspondiente segun Topic");
+
+                 }).catch((err) => {
+
+                     console.log(err);
+                 })
+
+             });
+
+             break;
+
+         case 'SUBSCRIBER':
+             socket.on('MESSAGE', (msg) => {
+                 console.log("Message: "+msg.details+" Topic: "+msg.topic);
+
+                 var msg_dir_queue = {
+                     details: "respuesta direccion cola",
+                     date: new Date(),
+                     topic: msg.topic,
+                     dir: ""
+                 };
+
+                 msg_dir_queue.dir = get_direction_queue(msg.topic);
+
+                 writePromise(msg_dir_queue, 'DIR_QUEUE', socket).then((resp) => {
+                     console.log("Mensaje de retorno enviado al Router con el Endpoint");
+
+                 }).catch((err) => {
+
+                     console.log(err);
+                 })
+
+             });
+
+             break;
+
+     }
+
+
+/*
+
      if (from == 'PRODUCER-from-router') {
 
         socket.on('MESSAGE', (msg) => {
@@ -68,7 +115,7 @@ io.on('connection', function (socket){
                })
 
            })
-       }
+       }*/
    });
  
  });
