@@ -52,7 +52,7 @@ io.on('connection', function (socket){
                 case 'SUBSCRIBER':
                     console.log("Message: "+msg.details+" Topic: "+msg.topic);
                     socket_consumidor = socket;
-                    writePromise(msg, 'SUBSCRIBER', socket_orquestador).then((resp) => {
+                    writePromise(msg, 'SUBSCRIBER-from-router', socket_orquestador).then((resp) => {
                         console.log("Mensaje de suscripcion enviado al orquestador");
 
                     }).catch((err) => {
@@ -60,7 +60,7 @@ io.on('connection', function (socket){
                         console.log(err);
                     });
                     break;
-                case 'DIR_QUEUE':
+                case 'DIR_QUEUE-from-orquestador':
                     console.log("Message: "+msg.details+" Endpoint de Topic: "+msg.dir);
                     writePromise(msg, 'DIR_QUEUE', socket_consumidor).then((resp) => {
                         console.log("Endpoint enviado al Consumidor!");
@@ -81,7 +81,7 @@ io.on('connection', function (socket){
 
 // Add a connect listener
 socket_orquestador.on('connect', function (socket_orquestador) {
-    console.log('Connected!');
+    console.log('Conectado con el orquestador');
 
 });
 
