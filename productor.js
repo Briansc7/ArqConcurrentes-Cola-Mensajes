@@ -13,11 +13,12 @@ var msgSender = new MsgSender();
 socket_router.on('connect', function (socket) {
     console.log('Productor se conecto a Router!');
     var message = {
+        from: 'PRODUCER',
         details: "mensaje de productor",
         date: new Date(),
         topic: 'Alerts'
     };
-    msgSender.send(message, 'PRODUCER', socket_router);
+    msgSender.send(message, socket_router);
 
 });
 

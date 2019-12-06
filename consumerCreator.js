@@ -15,12 +15,13 @@ socket_router.on('connect', function (socket) {
     console.log('Connected!');
 
     var message = {
+        from: 'SUBSCRIBER',
         details: "pedido de suscripcion",
         date: new Date(),
         topic: 'Alerts'
     };
 
-    msgSender.send(message, 'SUBSCRIBER', socket_router);
+    msgSender.send(message,  socket_router);
 
 });
 

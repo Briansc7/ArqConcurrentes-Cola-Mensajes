@@ -15,15 +15,16 @@ var message_queue = [];
 
 
 socket_nodo_datos.on('connect', function (socket) {
-    console.log('Connected!');
+    console.log('Conectado con nodo de datos');
 
     var message = {
+        from: 'CONSUMER',
         details: "mensaje de consumidor",
         date: new Date(),
         topic: 'Alerts'
     };
 
-    msgSender.send(message, 'CONSUMER', socket_nodo_datos);
+    msgSender.send(message, socket_nodo_datos);
 
 });
 
@@ -36,7 +37,7 @@ socket_nodo_datos.on('connect', function (socket) {
 socket_nodo_datos.on('MESSAGE', (msg) => {
 
     switch (msg.from){
-        case 'COLA':
+        case 'COLA-from-nodo-datos':
             console.log("Message: "+msg.details+" Topic: "+msg.topic);
             writePromise(msg).then((resp) => {
                 console.log("Mensaje recibido de nodo datos");

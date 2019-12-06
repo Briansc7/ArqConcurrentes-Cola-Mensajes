@@ -4,8 +4,7 @@ function MsgSender(){
 
 }
 
-method.send = function(message, handshake, socket) {
-    socket.emit('HANDSHAKE', handshake);
+method.send = function(message, socket) {
     socket.emit('MESSAGE', message);
     console.log("Message sent to server");
 

@@ -32,7 +32,9 @@ io.on('connection', function (socket){
              switch(msg.from) {
                  case 'PRODUCER-from-router':
                      console.log("Message: " + msg.details + " Topic: " + msg.topic);
-                     writePromise(msg, 'PRODUCER-from-orquestador', socket_nodo_datos).then((resp) => {
+                     var msg2 = msg;
+                     msg2.from = 'PRODUCER-from-orquestador';
+                     writePromise(msg2, socket_nodo_datos).then((resp) => {
                          console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
                      }).catch((err) => {
@@ -55,7 +57,7 @@ io.on('connection', function (socket){
 
                      msg_dir_queue.dir = get_direction_queue(msg.topic);
 
-                     writePromise(msg_dir_queue, 'DIR_QUEUE', socket).then((resp) => {
+                     writePromise(msg_dir_queue, socket).then((resp) => {
                          console.log("Mensaje de retorno enviado al Router con el Endpoint");
 
                      }).catch((err) => {
@@ -78,11 +80,11 @@ io.on('connection', function (socket){
  });
 
 
-  function writePromise (msg, handshake, socket) {
+  function writePromise (msg, socket) {
 
      return new Promise((resolve, reject) => {
          //send(msg, handshake, socket);
-         msgSender.send(msg, handshake, socket);
+         msgSender.send(msg, socket);
          resolve("write promise done");
 
 

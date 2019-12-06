@@ -28,7 +28,9 @@ io.on('connection', function (socket){
         switch(msg.from){
             case 'PRODUCER-from-orquestador':
                 console.log("Message: "+msg.details+" Topic: "+msg.topic);
-                writePromise(msg, 'PRODUCER-from-datos', socket_consumer).then((resp) => {
+                var msg2 = msg;
+                msg2.from = 'PRODUCER-from-datos';
+                writePromise(msg2, socket_consumer).then((resp) => {
                     console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
                 }).catch((err) => {
@@ -45,7 +47,7 @@ io.on('connection', function (socket){
                     date: new Date(),
                     topic: 'Alerts'
                 };
-                writePromise(message2, 'COLA', socket).then((resp) => {
+                writePromise(message2, socket).then((resp) => {
                     console.log("Mensaje enviado al consumidor");
 
                 }).catch((err) => {
@@ -61,11 +63,11 @@ io.on('connection', function (socket){
 
 
 
- function writePromise (msg, handshake, socket) {
+ function writePromise (msg, socket) {
 
     return new Promise((resolve, reject) => {
         //send(msg, socket);
-        msgSender.send(msg,handshake, socket);
+        msgSender.send(msg, socket);
         resolve("write promise done");
 
 
