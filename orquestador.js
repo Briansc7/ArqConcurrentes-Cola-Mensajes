@@ -3,7 +3,7 @@
 
 var ClientManager = require('./utilities/clientManager.js');
 var config = require('./config/config.json');
-var clientManager = new ClientManager(config.nodo_datos_endpoint+config.nodo_datos_port);
+var clientManager = new ClientManager(config.nodo_datos1.endpoint+config.nodo_datos1.port);
 var socket_nodo_datos = clientManager.get_client_socket();
 
 var ServerManager = require('./utilities/serverManager.js');
@@ -15,9 +15,7 @@ const server = serverManager.get_server();
 var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
-var hashmap_queue = {};
-
-hashmap_queue['Alerts'] = 'http://localhost:3002';
+var topics = getTopics();
 
 //corriendo el servidor
 server.listen(PORT, () => {
@@ -29,11 +27,12 @@ io.on('connection', function (socket){
  
    socket.on('HANDSHAKE', function (from) {
      console.log(from+ ' connected!');
-
+      // MENSAJE DE PRODUCER PARA ESCRIBIR
      if (from == 'PRODUCER-from-router') {
 
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);
+        // aca enviar mensaje al Nodo segun topic. Y despues mandar replica de mensaje al otro Nodo
         writePromise(msg, 'PRODUCER-from-orquestador', socket_nodo_datos).then((resp) => {
           console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
@@ -44,11 +43,12 @@ io.on('connection', function (socket){
 
         })
      }
-
-       if (from == 'SUBSCRIBER') {
+       // MENSAJE DE CONSUMER PARA SUBSCRIBIRSE
+      /* if (from == 'SUBSCRIBER') {
 
            socket.on('MESSAGE', (msg) => {
-               console.log("Message: "+msg.details+" Topic: "+msg.topic);
+               console.log("Topic: "+msg.topic);
+               // aca devolver el Endpoint del Nodo al Router para que este se lo devuelva al Consumer
 
                var msg_dir_queue = {
                    details: "respuesta direccion cola",
@@ -68,14 +68,14 @@ io.on('connection', function (socket){
                })
 
            })
-       }
+       }*/
    });
  
  });
 
  // Add a connect listener
  socket_nodo_datos.on('connect', function (socket_nodo_datos) {
-     console.log('Connected!');
+     console.log('Orquestador conectado a Nodo1!');
 
  });
 
@@ -97,4 +97,16 @@ io.on('connection', function (socket){
 
  function get_direction_queue(topic){
       return hashmap_queue[topic];
+ }
+
+
+ function getTopics() {
+    var topics = new Map();
+    config.nodo_datos1.queues.forEach(queue => {
+
+        topics.set(queue.topic, config.nodo_datos1.endpoint+config.nodo_datos1.port);
+    });
+
+    return topics;
+
  }

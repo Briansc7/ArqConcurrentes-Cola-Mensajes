@@ -34,7 +34,7 @@ io.on('connection', function (socket){
  
    socket.on('HANDSHAKE', function (from) {
      console.log(from+ ' connected!');
-
+     // MENSAJE DE PRODUCER PARA ESCRIBIR
      if (from == 'PRODUCER') {
 
         socket.on('MESSAGE', (msg) => {
@@ -50,10 +50,10 @@ io.on('connection', function (socket){
 
         })
      }
-
+      // MENSAJE DE CONSUMER PARA SUBSCRIBIRSE
      if (from == 'SUBSCRIBER'){
          socket.on('MESSAGE', (msg) => {
-             console.log("Message: "+msg.details+" Topic: "+msg.topic);
+             console.log("Topic: "+msg.topic);
              socket_consumidor = socket;
              writePromise(msg, 'SUBSCRIBER', socket_orquestador).then((resp) => {
                  console.log("Mensaje de suscripcion enviado al orquestador");
@@ -67,10 +67,10 @@ io.on('connection', function (socket){
 
          })
      }
-
+        // MENSAJE DE ORQUESTADOR CON EL ENDPOINT A DONDE SE TIENE QUE CONECTAR EL CONSUMER
        /*if (from == 'DIR_QUEUE'){
            socket.on('MESSAGE', (msg) => {
-               console.log("Message: "+msg.details+" Endpoint de Topic: "+msg.dir);
+               
                writePromise(msg, 'DIR_QUEUE', socket_consumidor).then((resp) => {
                    console.log("Endpoint enviado al Consumidor!");
 
@@ -106,16 +106,13 @@ socket_orquestador.on('HANDSHAKE', function (from) {
 
 // Add a connect listener
 socket_orquestador.on('connect', function (socket_orquestador) {
-    console.log('Connected!');
+    console.log('Router Conectado a Orquestador!');
 
 });
 
  function writePromise (msg, handshake, socket) {
 
-    // Aca creo que estaria bueno dividir en dos promesas distintas. Una para mandar mensaje de Productor
-    // y otra para Consumidor, ya que en el caso del consumi
-
-    return new Promise((resolve, reject) => {
+   return new Promise((resolve, reject) => {
         //send(msg);
         msgSender.send(msg, handshake, socket);
         resolve("Router envio mensaje a Orquestador!");

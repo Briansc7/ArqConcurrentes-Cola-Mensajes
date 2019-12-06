@@ -26,11 +26,12 @@ io.on('connection', function (socket){
  
    socket.on('HANDSHAKE', function (from) {
      console.log(from+ ' connected!');
-
+     // MENSAJE DE PRODUCER PARA ESCRIBIR
      if (from == 'PRODUCER-from-orquestador') {
 
         socket.on('MESSAGE', (msg) => {
         console.log("Message: "+msg.details+" Topic: "+msg.topic);
+        // aca escribir en Queue segun topic
         writePromise(msg, 'PRODUCER-from-datos', socket_consumer).then((resp) => {
           console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
@@ -41,10 +42,12 @@ io.on('connection', function (socket){
 
         })
      }
+     // MENSAJE DE CONSUMER PARA SUBSCRIBIRSE
      else if(from == 'CONSUMER'){
          socket.on('MESSAGE', (msg) => {
              socket_consumer = socket;
-             console.log("Message: "+msg.details+" Topic: "+msg.topic);
+             console.log("Topic: "+msg.topic);
+              // aca registrar al socket del Consumidor con el topic
              var message2 = {
                  details: "mensaje de nodo datos",
                  date: new Date(),
