@@ -27,64 +27,64 @@ server.listen(PORT, () => {
 io.on('connection', function (socket){
     console.log('Client '+socket.id+ ' connected!');
  
-   socket.on('HANDSHAKE', function (from) {
-     console.log(from+ ' connected!');
 
-     if (from == 'PRODUCER-from-router') {
+         socket.on('MESSAGE', (msg) => {
+             switch(msg.from) {
+                 case 'PRODUCER-from-router':
+                     console.log("Message: " + msg.details + " Topic: " + msg.topic);
+                     var msg2 = msg;
+                     msg2.from = 'PRODUCER-from-orquestador';
+                     writePromise(msg2, socket_nodo_datos).then((resp) => {
+                         console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
-        socket.on('MESSAGE', (msg) => {
-        console.log("Message: "+msg.details+" Topic: "+msg.topic);
-        writePromise(msg, 'PRODUCER-from-orquestador', socket_nodo_datos).then((resp) => {
-          console.log("Mensaje enviado al nodo correspondiente segun Topic");
+                     }).catch((err) => {
 
-        }).catch((err) => {
+                         console.log(err);
+                     });
 
-            console.log(err);
-        })
+                     break;
+                 case 'SUBSCRIBER-from-router':
 
-        })
-     }
+                     console.log("Message: " + msg.details + " Topic: " + msg.topic);
 
-       if (from == 'SUBSCRIBER') {
+                     var msg_dir_queue = {
+                         from: 'DIR_QUEUE-from-orquestador',
+                         details: "respuesta direccion cola",
+                         date: new Date(),
+                         topic: msg.topic,
+                         dir: ""
+                     };
 
-           socket.on('MESSAGE', (msg) => {
-               console.log("Message: "+msg.details+" Topic: "+msg.topic);
+                     msg_dir_queue.dir = get_direction_queue(msg.topic);
 
-               var msg_dir_queue = {
-                   details: "respuesta direccion cola",
-                   date: new Date(),
-                   topic: msg.topic,
-                   dir: ""
-               };
+                     writePromise(msg_dir_queue, socket).then((resp) => {
+                         console.log("Mensaje de retorno enviado al Router con el Endpoint");
 
-               msg_dir_queue.dir = get_direction_queue(msg.topic);
+                     }).catch((err) => {
 
-               writePromise(msg_dir_queue, 'DIR_QUEUE', socket).then((resp) => {
-                   console.log("Mensaje de retorno enviado al Router con el Endpoint");
+                         console.log(err);
+                     });
 
-               }).catch((err) => {
 
-                   console.log(err);
-               })
+                     break;
+             }
+         });
 
-           })
-       }
-   });
  
  });
 
  // Add a connect listener
  socket_nodo_datos.on('connect', function (socket_nodo_datos) {
-     console.log('Connected!');
+     console.log('Nodo de datos conectado');
 
  });
 
 
-  function writePromise (msg, handshake, socket) {
+  function writePromise (msg, socket) {
 
      return new Promise((resolve, reject) => {
          //send(msg, handshake, socket);
-         msgSender.send(msg, handshake, socket);
+         msgSender.send(msg, socket);
          resolve("write promise done");
 
 

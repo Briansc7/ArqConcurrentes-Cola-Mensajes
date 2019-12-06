@@ -23,54 +23,51 @@ server.listen(PORT, () => {
 
 io.on('connection', function (socket){
     console.log('Client '+socket.id+ ' connected!');
- 
-   socket.on('HANDSHAKE', function (from) {
-     console.log(from+ ' connected!');
 
-     if (from == 'PRODUCER-from-orquestador') {
+    socket.on('MESSAGE', (msg) => {
+        switch(msg.from){
+            case 'PRODUCER-from-orquestador':
+                console.log("Message: "+msg.details+" Topic: "+msg.topic);
+                var msg2 = msg;
+                msg2.from = 'PRODUCER-from-datos';
+                writePromise(msg2, socket_consumer).then((resp) => {
+                    console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
-        socket.on('MESSAGE', (msg) => {
-        console.log("Message: "+msg.details+" Topic: "+msg.topic);
-        writePromise(msg, 'PRODUCER-from-datos', socket_consumer).then((resp) => {
-          console.log("Mensaje enviado al nodo correspondiente segun Topic");
+                }).catch((err) => {
 
-        }).catch((err) => {
+                    console.log(err);
+                });
+                break;
+            case 'CONSUMER':
+                socket_consumer = socket;
+                console.log("Message: "+msg.details+" Topic: "+msg.topic);
+                var message2 = {
+                    from: 'COLA-from-nodo-datos',
+                    details: "mensaje de nodo datos",
+                    date: new Date(),
+                    topic: 'Alerts'
+                };
+                writePromise(message2, socket).then((resp) => {
+                    console.log("Mensaje enviado al consumidor");
 
-            console.log(err);
-        })
+                }).catch((err) => {
 
-        })
-     }
-     else if(from == 'CONSUMER'){
-         socket.on('MESSAGE', (msg) => {
-             socket_consumer = socket;
-             console.log("Message: "+msg.details+" Topic: "+msg.topic);
-             var message2 = {
-                 details: "mensaje de nodo datos",
-                 date: new Date(),
-                 topic: 'Alerts'
-             };
-             writePromise(message2, 'COLA', socket).then((resp) => {
-                 console.log("Mensaje enviado al consumidor");
+                    console.log(err);
+                })
+                break;
+        }
 
-             }).catch((err) => {
+    });
 
-                 console.log(err);
-             })
-
-         })
-       }
-   });
- 
  });
 
 
 
- function writePromise (msg, handshake, socket) {
+ function writePromise (msg, socket) {
 
     return new Promise((resolve, reject) => {
         //send(msg, socket);
-        msgSender.send(msg,handshake, socket);
+        msgSender.send(msg, socket);
         resolve("write promise done");
 
 

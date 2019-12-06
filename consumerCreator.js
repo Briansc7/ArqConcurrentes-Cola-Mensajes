@@ -15,32 +15,29 @@ socket_router.on('connect', function (socket) {
     console.log('Connected!');
 
     var message = {
+        from: 'SUBSCRIBER',
         details: "pedido de suscripcion",
         date: new Date(),
         topic: 'Alerts'
     };
 
-    msgSender.send(message, 'SUBSCRIBER', socket_router);
+    msgSender.send(message,  socket_router);
 
 });
 
 
 
-socket_router.on('HANDSHAKE', function (from) {
-        console.log(from+ ' connected!');
+socket_router.on('MESSAGE', (msg) => {
 
-        if (from == 'DIR_QUEUE') {
+    if(msg.from == 'DIR_QUEUE'){
+        console.log("Message: "+msg.details+" Topic: "+msg.topic);
 
-            socket_router.on('MESSAGE', (msg) => {
-                console.log("Message: "+msg.details+" Topic: "+msg.topic);
+        child = fork('./consumidor.js', [msg.dir]);
 
-                child = fork('./consumidor.js',
-                    [msg.dir]
-                );
+    }
 
-            })
-        }
-    });
+});
+
 
 
 

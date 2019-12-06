@@ -27,97 +27,82 @@ var message_queue = [];
 //corriendo el servidor
 server.listen(PORT, () => {
   console.log(`Server running in http://localhost:${PORT}`)
-})
+});
+
 
 io.on('connection', function (socket){
     console.log('Client '+socket.id+ ' connected!');
  
-   socket.on('HANDSHAKE', function (from) {
-     console.log(from+ ' connected!');
 
-     if (from == 'PRODUCER') {
 
         socket.on('MESSAGE', (msg) => {
-        console.log("Message: "+msg.details+" Topic: "+msg.topic);
-        writePromise(msg, 'PRODUCER-from-router', socket_orquestador).then((resp) => {
-          console.log("Router envio mensaje de Productor al Orquestador!");
-          
 
-        }).catch((err) => {
+            switch (msg.from) {
+                case 'PRODUCER':
+                    console.log("Message: "+msg.details+" Topic: "+msg.topic);
+                    var msg2 = msg;
+                    msg2.from = 'PRODUCER-from-router';
+                    writePromise(msg2, socket_orquestador).then((resp) => {
+                        console.log("Router envio mensaje de Productor al Orquestador!");
 
-            console.log(err);
+
+                    }).catch((err) => {
+
+                        console.log(err);
+                    });
+                    break;
+                case 'SUBSCRIBER':
+                    console.log("Message: "+msg.details+" Topic: "+msg.topic);
+                    socket_consumidor = socket;
+                    var msg2 = msg;
+                    msg2.from = 'SUBSCRIBER-from-router';
+                    writePromise(msg2, socket_orquestador).then((resp) => {
+                        console.log("Mensaje de suscripcion enviado al orquestador");
+
+                    }).catch((err) => {
+
+                        console.log(err);
+                    });
+                    break;
+
+
+            }
+
+
         })
 
-        })
-     }
-
-     if (from == 'SUBSCRIBER'){
-         socket.on('MESSAGE', (msg) => {
-             console.log("Message: "+msg.details+" Topic: "+msg.topic);
-             socket_consumidor = socket;
-             writePromise(msg, 'SUBSCRIBER', socket_orquestador).then((resp) => {
-                 console.log("Mensaje de suscripcion enviado al orquestador");
-
-             }).catch((err) => {
-
-                 console.log(err);
-             })
-
-
-
-         })
-     }
-
-       /*if (from == 'DIR_QUEUE'){
-           socket.on('MESSAGE', (msg) => {
-               console.log("Message: "+msg.details+" Endpoint de Topic: "+msg.dir);
-               writePromise(msg, 'DIR_QUEUE', socket_consumidor).then((resp) => {
-                   console.log("Endpoint enviado al Consumidor!");
-
-               }).catch((err) => {
-
-                   console.log(err);
-               })
-
-           })
-       }*/
-
-   });
  
  });
 
-socket_orquestador.on('HANDSHAKE', function (from) {
-    console.log(from+ ' connected!');
+socket_orquestador.on('MESSAGE', (msg) => {
+if(msg.from == 'DIR_QUEUE-from-orquestador'){
+    console.log("Message: "+msg.details+" Endpoint de Topic: "+msg.dir);
+    var msg2 = msg;
+    msg2.from = 'DIR_QUEUE';
+    writePromise(msg2, socket_consumidor).then((resp) => {
+        console.log("Endpoint enviado al Consumidor!");
 
-    if (from == 'DIR_QUEUE'){
-        socket_orquestador.on('MESSAGE', (msg) => {
-            console.log("Message: "+msg.details+" Endpoint de Topic: "+msg.dir);
-            writePromise(msg, 'DIR_QUEUE', socket_consumidor).then((resp) => {
-                console.log("Endpoint enviado al Consumidor!");
+    }).catch((err) => {
 
-            }).catch((err) => {
-
-                console.log(err);
-            })
-
-        })
-    }
+        console.log(err);
+    });
+}
 });
 
 // Add a connect listener
 socket_orquestador.on('connect', function (socket_orquestador) {
-    console.log('Connected!');
+    console.log('Conectado con el orquestador');
 
 });
 
- function writePromise (msg, handshake, socket) {
+ function writePromise (msg, socket) {
 
     // Aca creo que estaria bueno dividir en dos promesas distintas. Una para mandar mensaje de Productor
     // y otra para Consumidor, ya que en el caso del consumi
 
     return new Promise((resolve, reject) => {
         //send(msg);
-        msgSender.send(msg, handshake, socket);
+        msgSender.send(msg, socket);
         resolve("Router envio mensaje a Orquestador!");
 
 

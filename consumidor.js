@@ -15,64 +15,58 @@ var message_queue = [];
 
 
 socket_nodo_datos.on('connect', function (socket) {
-    console.log('Connected!');
+    console.log('Conectado con nodo de datos');
 
     var message = {
+        from: 'CONSUMER',
         details: "mensaje de consumidor",
         date: new Date(),
         topic: 'Alerts'
     };
 
-    msgSender.send(message, 'CONSUMER', socket_nodo_datos);
+    msgSender.send(message, socket_nodo_datos);
 
 });
 
 
 
 
-socket_nodo_datos.on('HANDSHAKE', function (from) {
-        console.log(from+ ' connected!');
 
-        if (from == 'COLA') {
 
-            socket_nodo_datos.on('MESSAGE', (msg) => {
+
+socket_nodo_datos.on('MESSAGE', (msg) => {
+
+    switch (msg.from){
+        case 'COLA-from-nodo-datos':
+            console.log("Message: "+msg.details+" Topic: "+msg.topic);
+            writePromise(msg).then((resp) => {
+                console.log("Mensaje recibido de nodo datos");
+
+            }).catch((err) => {
+
+                console.log(err);
+            });
+            break;
+            case 'PRODUCER-from-datos':
                 console.log("Message: "+msg.details+" Topic: "+msg.topic);
                 writePromise(msg).then((resp) => {
-                    console.log("Mensaje recibido de nodo datos");
+                    console.log("mensaje del productor atendido");
 
                 }).catch((err) => {
 
                     console.log(err);
-                })
+                });
+                break;
 
-            })
-        }
+    }
 
 });
 
 
+
+
 socket_nodo_datos.on('connection', function (socket){
     console.log('Client '+socket.id+ ' connected!');
- 
-   socket.on('HANDSHAKE', function (from) {
-     console.log(from+ ' connected!');
-
-     if (from == 'PRODUCER-from-datos') {
-
-        socket.on('MESSAGE', (msg) => {
-        console.log("Message: "+msg.details+" Topic: "+msg.topic);
-        writePromise(msg).then((resp) => {
-          console.log("mensaje del productor atendido");
-
-        }).catch((err) => {
-
-            console.log(err);
-        })
-
-        })
-     }
-   });
- 
  });
 
 
