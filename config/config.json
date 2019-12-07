@@ -8,11 +8,29 @@
     "nodo_datos1": {
         "endpoint": "http://localhost:",
         "port": 3002,
-        "queues": [ {
-            "topic": "Alerts"
-        },
-         {
-            "topic": "Errors"
-        }]
+        "topics": [
+            {
+                "topic": "Alerts",
+                "mode": "PubSub"
+            },
+            {
+                "topic": "Errors",
+                "mode": "RR"
+            }
+        ]
+    },
+    "nodo_datos2": {
+        "endpoint": "http://localhost:",
+        "port": 3003,
+        "topics": [
+            {
+                "topic": "Warnings",
+                "mode": "PubSub"
+            },
+            {
+                "topic": "Details",
+                "mode": "RR"
+            }
+        ]
     }
 }
