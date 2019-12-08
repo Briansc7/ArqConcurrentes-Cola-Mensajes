@@ -20,7 +20,9 @@ socket_router.on('connect', function (socket) {
     });
 
 
+
 });
+
 
 
 
@@ -34,9 +36,6 @@ socket_router.on('ENDPOINT', function (endpoint) {
 
         socket_nodo_datos = socket;
     });*/
-
-
-
 
 
 
@@ -55,6 +54,7 @@ socket_router.on('ENDPOINT', function (endpoint) {
     });
 
 });*/
+
 
 
 

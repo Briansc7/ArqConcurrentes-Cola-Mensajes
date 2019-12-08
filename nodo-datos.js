@@ -21,7 +21,8 @@ var topics = initTopics();
 //corriendo el servidor
 server.listen(PORT, () => {
     console.log(`Server running in http://localhost:${PORT}`)
-})
+});
+
 
 io.on('connection', function (socket) {
     console.log('Client ' + socket.id + ' connected!');
@@ -55,10 +56,12 @@ io.on('connection', function (socket) {
 
             }).catch((err) => {
 
+
                 console.log(err);
             })
 
         }));
+
 
 
 });
@@ -111,6 +114,7 @@ function initTopics() {
             "mode": queue.mode,
             "subscribers": []
         });
+
 
 
     });

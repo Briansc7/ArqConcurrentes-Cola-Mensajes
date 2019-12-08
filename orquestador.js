@@ -20,7 +20,8 @@ var topics = getTopics();
 //corriendo el servidor
 server.listen(PORT, () => {
     console.log(`Server running in http://localhost:${PORT}`)
-})
+});
+
 
 io.on('connection', function (socket) {
     console.log('Client ' + socket.id + ' connected!');
@@ -34,17 +35,19 @@ io.on('connection', function (socket) {
         writePromise(msg, 'PRODUCER-from-orquestador', socket_nodo_datos).then((resp) => {
             console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
-        }).catch((err) => {
+                     }).catch((err) => {
 
-            console.log(err);
-        });
+
+                         console.log(err);
+                     });
+
 
 
 
     },
 
 
-        socket.on('SUBSCRIBER', (topic) => {
+        socket.on('SUBSCRIBER-from-router', (topic) => {
             console.log("Consumidor conectado desde Router!");
             console.log("Topic: " + topic);
             // aca devolver el Endpoint del Nodo al Router para que este se lo devuelva al Consumer
@@ -92,10 +95,10 @@ function writePromise(msg, messageId, socket) {
 }
 
 
-
 function get_direction_queue(topic) {
     return hashmap_queue[topic];
 }
+
 
 
 function getTopics() {

@@ -23,8 +23,9 @@ var msgSender = new MsgSender();
 
 //corriendo el servidor
 server.listen(PORT, () => {
+
     console.log(`Server running in http://localhost:${PORT}`)
-})
+});
 
 io.on('connection', function (socket) {
     console.log('Client ' + socket.id + ' connected!');
@@ -46,12 +47,13 @@ io.on('connection', function (socket) {
 
 
 
-
         socket.on('SUBSCRIBER', (topic) => {
             console.log("Consumidor conectado!");
             console.log("Topic: " + topic);
+
+            socket_consumidor = socket;//estoy hay que mejorarlo, quizas ponerlo en el mensaje que viaja para saber a quien responder
         
-            writePromise(topic, 'SUBSCRIBER', socket_orquestador).then((resp) => {
+            writePromise(topic, 'SUBSCRIBER-from-router', socket_orquestador).then((resp) => {
                 console.log("Mensaje de suscripcion enviado al orquestador");
 
             }).catch((err) => {
@@ -67,7 +69,7 @@ io.on('connection', function (socket) {
             
             
             
-                writePromise(endpoint, 'ENDPOINT', socket).then((resp) => {
+                writePromise(endpoint, 'ENDPOINT', socket_consumidor).then((resp) => {
                     console.log("Endpoint enviado al Consumidor!");
             
                 }).catch((err) => {
@@ -91,6 +93,7 @@ io.on('connection', function (socket) {
 
 
 
+
 });
 
 
@@ -99,6 +102,7 @@ io.on('connection', function (socket) {
 
 // Add a connect listener
 socket_orquestador.on('connect', function (socket_orquestador) {
+
     console.log('Router Conectado a Orquestador!');
 
 });
@@ -109,6 +113,7 @@ function writePromise(msg, messageId, socket) {
         
         msgSender.send(msg, messageId, socket);
         resolve("Done");
+
 
 
     });
