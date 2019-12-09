@@ -2,29 +2,24 @@
 //requiriendo dependencias
 
 var ClientManager = require('./utilities/clientManager.js');
-
+var config = require('./config/config.json');
 const process = require('process');
-var clientManager = new ClientManager(process.argv[2]);
-
-var socket_nodo_datos = clientManager.get_client_socket();
-
 var MsgSender = require('./utilities/msgSender.js');
+
+var clientManager = new ClientManager(config.router_endpoint + config.router_port);
+var socket_router = clientManager.get_client_socket();
+var socket_nodo_datos;
 var msgSender = new MsgSender();
 
-var message_queue = [];
+socket_router.on('connect', function (socket) {
+    console.log('Consumidor conectado a Router!');
+    var topicASubscribir = process.argv[2];
+    subscribePromise(topicASubscribir, "SUBSCRIBER", socket_router).then(resp => {
+
+        console.log("Consumidor se quiere subscribir a topic " + topicASubscribir);
+    });
 
 
-socket_nodo_datos.on('connect', function (socket) {
-    console.log('Conectado con nodo de datos');
-
-    var message = {
-        from: 'CONSUMER',
-        details: "mensaje de consumidor",
-        date: new Date(),
-        topic: 'Alerts'
-    };
-
-    msgSender.send(message, socket_nodo_datos);
 
 });
 
@@ -32,56 +27,60 @@ socket_nodo_datos.on('connect', function (socket) {
 
 
 
+socket_router.on('ENDPOINT', function (endpoint) {
 
 
-socket_nodo_datos.on('MESSAGE', (msg) => {
 
-    switch (msg.from){
-        case 'COLA-from-nodo-datos':
-            console.log("Message: "+msg.details+" Topic: "+msg.topic);
-            writePromise(msg).then((resp) => {
-                console.log("Mensaje recibido de nodo datos");
+    console.log("Endpoint recibido de router: " + endpoint);
+    /*connectToNodePromise(endpoint).then(socket => {
 
-            }).catch((err) => {
+        socket_nodo_datos = socket;
+    });*/
 
-                console.log(err);
-            });
-            break;
-            case 'PRODUCER-from-datos':
-                console.log("Message: "+msg.details+" Topic: "+msg.topic);
-                writePromise(msg).then((resp) => {
-                    console.log("mensaje del productor atendido");
 
-                }).catch((err) => {
-
-                    console.log(err);
-                });
-                break;
-
-    }
 
 });
 
 
+/*socket_nodo_datos.on('connection', function (socket) {
+    console.log('Client ' + socket.id + ' connected!');
+
+    socket.on('PRODUCER-from-datos', function (msg) {
+        console.log('Mensaje recibio de Nodo!');
+        console.log("Message: " + msg.details + " Topic: " + msg.topic);
+               
+
+        
+    });
+
+});*/
 
 
-socket_nodo_datos.on('connection', function (socket){
-    console.log('Client '+socket.id+ ' connected!');
- });
 
 
-
- function writePromise (msg) {
+function subscribePromise(topicASubscribir, messageId, socket_router) {
 
     return new Promise((resolve, reject) => {
 
-        resolve("write promise done");
+        msgSender.send(topicASubscribir, messageId, socket_router);
+        resolve("Done");
 
 
     });
 
-    
- }
+
+}
+
+
+function connectToNodePromise(endpoint) {
+
+    return new Promise((resolve, reject) => {
+
+        var clientManager = new ClientManager(endpoint);
+        var socket_nodo = clientManager.get_client_socket();
+        resolve(socket_nodo);
+    });
+}
 
 
 

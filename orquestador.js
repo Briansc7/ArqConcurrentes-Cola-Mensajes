@@ -3,7 +3,7 @@
 
 var ClientManager = require('./utilities/clientManager.js');
 var config = require('./config/config.json');
-var clientManager = new ClientManager(config.nodo_datos_endpoint+config.nodo_datos_port);
+var clientManager = new ClientManager(config.nodo_datos1.endpoint + config.nodo_datos1.port);
 var socket_nodo_datos = clientManager.get_client_socket();
 
 var ServerManager = require('./utilities/serverManager.js');
@@ -15,86 +15,107 @@ const server = serverManager.get_server();
 var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
-var hashmap_queue = {};
-
-hashmap_queue['Alerts'] = 'http://localhost:3002';
+var topics = getTopics();
 
 //corriendo el servidor
 server.listen(PORT, () => {
-  console.log(`Server running in http://localhost:${PORT}`)
-})
+    console.log(`Server running in http://localhost:${PORT}`)
+});
 
-io.on('connection', function (socket){
-    console.log('Client '+socket.id+ ' connected!');
- 
 
-         socket.on('MESSAGE', (msg) => {
-             switch(msg.from) {
-                 case 'PRODUCER-from-router':
-                     console.log("Message: " + msg.details + " Topic: " + msg.topic);
-                     var msg2 = msg;
-                     msg2.from = 'PRODUCER-from-orquestador';
-                     writePromise(msg2, socket_nodo_datos).then((resp) => {
-                         console.log("Mensaje enviado al nodo correspondiente segun Topic");
+io.on('connection', function (socket) {
+    console.log('Client ' + socket.id + ' connected!');
 
-                     }).catch((err) => {
+    socket.on('PRODUCER-from-router', function (msg) {
+        console.log('Productor conectado desde Router!');
+        // MENSAJE DE PRODUCER PARA ESCRIBIR
 
-                         console.log(err);
-                     });
-
-                     break;
-                 case 'SUBSCRIBER-from-router':
-
-                     console.log("Message: " + msg.details + " Topic: " + msg.topic);
-
-                     var msg_dir_queue = {
-                         from: 'DIR_QUEUE-from-orquestador',
-                         details: "respuesta direccion cola",
-                         date: new Date(),
-                         topic: msg.topic,
-                         dir: ""
-                     };
-
-                     msg_dir_queue.dir = get_direction_queue(msg.topic);
-
-                     writePromise(msg_dir_queue, socket).then((resp) => {
-                         console.log("Mensaje de retorno enviado al Router con el Endpoint");
+        console.log("Message: " + msg.details + " Topic: " + msg.topic);
+        // aca enviar mensaje al Nodo segun topic. Y despues mandar replica de mensaje al otro Nodo
+        writePromise(msg, 'PRODUCER-from-orquestador', socket_nodo_datos).then((resp) => {
+            console.log("Mensaje enviado al nodo correspondiente segun Topic");
 
                      }).catch((err) => {
+
 
                          console.log(err);
                      });
 
 
-                     break;
-             }
-         });
-
- 
- });
-
- // Add a connect listener
- socket_nodo_datos.on('connect', function (socket_nodo_datos) {
-     console.log('Nodo de datos conectado');
-
- });
 
 
-  function writePromise (msg, socket) {
-
-     return new Promise((resolve, reject) => {
-         //send(msg, handshake, socket);
-         msgSender.send(msg, socket);
-         resolve("write promise done");
+    },
 
 
-     });
+        socket.on('SUBSCRIBER-from-router', (topic) => {
+            console.log("Consumidor conectado desde Router!");
+            console.log("Topic: " + topic);
+            // aca devolver el Endpoint del Nodo al Router para que este se lo devuelva al Consumer
+            var endpoint = topics.get(topic);
+            console.log(endpoint);
+            if (endpoint =! null) {
+            writePromise(endpoint, 'ENDPOINT', socket).then((resp) => {
+                console.log("Mensaje de retorno enviado al Router con el Endpoint");
+
+            }).catch((err) => {
+
+                console.log(err);
+            })
+
+        } else {
+
+        msgSender.send("El topic al cual se quiere subscribir no existe!", "ERROR", socket);
+
+        }
+
+        }));
+       
 
 
-  }
+});
+
+// Add a connect listener
+socket_nodo_datos.on('connect', function (socket_nodo_datos) {
+    console.log('Orquestador conectado a Nodo1!');
+
+});
+
+
+function writePromise(msg, messageId, socket) {
+
+    return new Promise((resolve, reject) => {
+        //send(msg, handshake, socket);
+        msgSender.send(msg, messageId, socket);
+        resolve("write promise done");
+
+
+    });
+
+
+}
+
+
+function get_direction_queue(topic) {
+    return hashmap_queue[topic];
+}
 
 
 
- function get_direction_queue(topic){
-      return hashmap_queue[topic];
- }
+function getTopics() {
+    var topics = new Map();
+    config.nodo_datos1.topics.forEach(queue => {
+
+        topics.set(queue.topic, config.nodo_datos1.endpoint + config.nodo_datos1.port);
+    });
+
+    config.nodo_datos2.topics.forEach(queue => {
+
+        topics.set(queue.topic, config.nodo_datos2.endpoint + config.nodo_datos2.port);
+    });
+
+    console.log("ORQUESTADOR INICIADO");
+    console.log(topics);
+
+    return topics;
+
+}

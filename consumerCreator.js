@@ -13,28 +13,28 @@ var child;
 
 socket_router.on('connect', function (socket) {
     console.log('Connected!');
-
+/*
     var message = {
         from: 'SUBSCRIBER',
         details: "pedido de suscripcion",
         date: new Date(),
         topic: 'Alerts'
-    };
+    };*/
 
-    msgSender.send(message,  socket_router);
+    msgSender.send('Alerts',  'SUBSCRIBER',socket_router);
 
 });
 
 
 
-socket_router.on('MESSAGE', (msg) => {
+socket_router.on('ENDPOINT', (endpoint) => {
 
-    if(msg.from == 'DIR_QUEUE'){
-        console.log("Message: "+msg.details+" Topic: "+msg.topic);
+        console.log("Endpoint del Router recibido!");
+        console.log(endpoint);
 
-        child = fork('./consumidor.js', [msg.dir]);
+        child = fork('./consumidor.js', [endpoint]);
 
-    }
+
 
 });
 

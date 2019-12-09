@@ -1,5 +1,6 @@
 var ClientManager = require('./utilities/clientManager.js');
 var config = require('./config/config.json');
+const process = require('process');
 var clientManager = new ClientManager(config.router_endpoint+config.router_port);
 var socket_router = clientManager.get_client_socket();
 
@@ -13,12 +14,11 @@ var msgSender = new MsgSender();
 socket_router.on('connect', function (socket) {
     console.log('Productor se conecto a Router!');
     var message = {
-        from: 'PRODUCER',
-        details: "mensaje de productor",
+        details: process.argv[3],
         date: new Date(),
-        topic: 'Alerts'
+        topic: process.argv[2]
     };
-    msgSender.send(message, socket_router);
+    msgSender.send(message, 'PRODUCER', socket_router);
 
 });
 
