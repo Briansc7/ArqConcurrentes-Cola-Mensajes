@@ -10,17 +10,31 @@ var ServerManager = require('./utilities/serverManager.js');
 var serverManager = new ServerManager(config.orquestador_port);
 const io = serverManager.get_io();
 const PORT = serverManager.get_port();
+const http_port = 8080;
 const server = serverManager.get_server();
+const app_rest = serverManager.get_app_rest();
+
+app_rest.listen(http_port, () => {
+
+    console.log("Escuchando en el 8080 para API");
+});
+
+//corriendo el servidor
+server.listen(PORT, () => {
+    console.log(`Server running in http://localhost:${PORT}`)
+});
+
+app_rest.get('/queue', (req, res) => {
+ res.status(200).send({response: "API OK!" });
+
+});
 
 var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
 var topics = getTopics();
 
-//corriendo el servidor
-server.listen(PORT, () => {
-    console.log(`Server running in http://localhost:${PORT}`)
-});
+
 
 
 io.on('connection', function (socket) {
