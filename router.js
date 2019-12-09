@@ -8,8 +8,9 @@
 
 var ClientManager = require('./utilities/clientManager.js');
 var config = require('./config/config.json');
-var clientManager = new ClientManager(config.orquestador_endpoint+config.orquestador_port);
+var clientManager = new ClientManager(config.orquestador_endpoint + config.orquestador_port);
 var socket_orquestador = clientManager.get_client_socket();
+var socket_consumidor;
 
 var ServerManager = require('./utilities/serverManager.js');
 var serverManager = new ServerManager(config.router_port);
@@ -20,93 +21,102 @@ const server = serverManager.get_server();
 var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
-var socket_consumidor;
-
-var message_queue = [];
-
 //corriendo el servidor
 server.listen(PORT, () => {
-  console.log(`Server running in http://localhost:${PORT}`)
+
+    console.log(`Server running in http://localhost:${PORT}`)
+});
+
+io.on('connection', function (socket) {
+    console.log('Client ' + socket.id + ' connected!');
+
+    socket.on('PRODUCER', function (msg) {
+            console.log('Productor conectado!');
+            console.log("Message: " + msg.details + " Topic: " + msg.topic);
+            writePromise(msg, 'PRODUCER-from-router', socket_orquestador).then((resp) => {
+                console.log("Router envio mensaje de Productor al Orquestador!");
+
+
+            }).catch((err) => {
+
+                console.log(err);
+            })
+
+
+        },
+
+
+
+        socket.on('SUBSCRIBER', (topic) => {
+            console.log("Consumidor conectado!");
+            console.log("Topic: " + topic);
+
+            socket_consumidor = socket;//estoy hay que mejorarlo, quizas ponerlo en el mensaje que viaja para saber a quien responder
+        
+            writePromise(topic, 'SUBSCRIBER-from-router', socket_orquestador).then((resp) => {
+                console.log("Mensaje de suscripcion enviado al orquestador");
+
+            }).catch((err) => {
+
+                console.log(err);
+            });
+
+
+            
+            socket_orquestador.on('ENDPOINT', function (endpoint) {
+                console.log("Endpoint de Orquestador recibido!");
+                console.log(endpoint);
+            
+            
+            
+                writePromise(endpoint, 'ENDPOINT', socket_consumidor).then((resp) => {
+                    console.log("Endpoint enviado al Consumidor!");
+            
+                }).catch((err) => {
+            
+                    console.log(err);
+                })
+            
+            
+            });
+
+
+
+
+        }));
+
+       
+
+
+
+
+
+
+
+
 });
 
 
-io.on('connection', function (socket){
-    console.log('Client '+socket.id+ ' connected!');
- 
 
 
-        socket.on('MESSAGE', (msg) => {
-
-            switch (msg.from) {
-                case 'PRODUCER':
-                    console.log("Message: "+msg.details+" Topic: "+msg.topic);
-                    var msg2 = msg;
-                    msg2.from = 'PRODUCER-from-router';
-                    writePromise(msg2, socket_orquestador).then((resp) => {
-                        console.log("Router envio mensaje de Productor al Orquestador!");
-
-
-                    }).catch((err) => {
-
-                        console.log(err);
-                    });
-                    break;
-                case 'SUBSCRIBER':
-                    console.log("Message: "+msg.details+" Topic: "+msg.topic);
-                    socket_consumidor = socket;
-                    var msg2 = msg;
-                    msg2.from = 'SUBSCRIBER-from-router';
-                    writePromise(msg2, socket_orquestador).then((resp) => {
-                        console.log("Mensaje de suscripcion enviado al orquestador");
-
-                    }).catch((err) => {
-
-                        console.log(err);
-                    });
-                    break;
-
-
-            }
-
-
-        })
-
- 
- });
-
-socket_orquestador.on('MESSAGE', (msg) => {
-if(msg.from == 'DIR_QUEUE-from-orquestador'){
-    console.log("Message: "+msg.details+" Endpoint de Topic: "+msg.dir);
-    var msg2 = msg;
-    msg2.from = 'DIR_QUEUE';
-    writePromise(msg2, socket_consumidor).then((resp) => {
-        console.log("Endpoint enviado al Consumidor!");
-
-    }).catch((err) => {
-
-        console.log(err);
-    });
-}
-});
 
 // Add a connect listener
 socket_orquestador.on('connect', function (socket_orquestador) {
-    console.log('Conectado con el orquestador');
+
+    console.log('Router Conectado a Orquestador!');
 
 });
 
- function writePromise (msg, socket) {
-
-    // Aca creo que estaria bueno dividir en dos promesas distintas. Una para mandar mensaje de Productor
-    // y otra para Consumidor, ya que en el caso del consumi
+function writePromise(msg, messageId, socket) {
 
     return new Promise((resolve, reject) => {
-        //send(msg);
-        msgSender.send(msg, socket);
-        resolve("Router envio mensaje a Orquestador!");
+        
+        msgSender.send(msg, messageId, socket);
+        resolve("Done");
+
 
 
     });
 
-    
- }
+
+}
