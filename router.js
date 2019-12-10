@@ -71,22 +71,7 @@ io.on('connection', function (socket) {
 
             
             
-            socket_orquestador.on('ENDPOINT', function (endpoint) {
-                console.log("Endpoint de Orquestador recibido!");
-                console.log(endpoint);
-            
-            
-            
-                writePromise(endpoint, 'ENDPOINT', socket_consumidor).then((resp) => {
-                    console.log("Endpoint enviado al Consumidor!");
-            
-                }).catch((err) => {
-            
-                    console.log(err);
-                })
-            
-            
-            });
+          
 
 
 
@@ -102,6 +87,24 @@ io.on('connection', function (socket) {
 
 
 
+
+
+});
+
+
+socket_orquestador.on('ENDPOINT', function (endpoint) {
+    console.log("Endpoint de Orquestador recibido!");
+    console.log(endpoint);
+
+
+
+    writePromise(endpoint, 'ENDPOINT', socket_consumidor).then((resp) => {
+        console.log("Endpoint enviado al Consumidor!");
+
+    }).catch((err) => {
+
+        console.log(err);
+    })
 
 
 });

@@ -37,13 +37,7 @@ socket_router.on('ENDPOINT', function (endpoint) {
         socket_nodo_datos.on('connect', function (socket) {
     
 
-            /*socket.on('PRODUCER-from-datos', function (msg) {
-                console.log('Mensaje recibio de Nodo!');
-                console.log("Message: " + msg.details + " Topic: " + msg.topic);
-                       
-        
-                
-            });*/
+          
         
             subscribeToNodePromise('SUBSCRIBER').then(() => {
 
@@ -53,6 +47,17 @@ socket_router.on('ENDPOINT', function (endpoint) {
             })
         
         });
+
+          socket_nodo_datos.on('QUEUE_MESSAGE', function (msg) {
+                console.log('Mensaje recibido de Nodo!');
+                console.log("Mensaje: "+msg);
+               // console.log("Message: " + msg.details + " Topic: " + msg.topic);
+                       
+        
+                
+            });
+
+
     });
 
 
