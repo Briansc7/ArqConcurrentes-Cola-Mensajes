@@ -27,6 +27,13 @@ server.listen(PORT, () => {
     console.log(`Server running in http://localhost:${PORT}`)
 });
 
+// Add a connect listener
+socket_orquestador.on('connect', function (socket_orquestador) {
+
+    console.log('Router Conectado a Orquestador!');
+
+});
+
 io.on('connection', function (socket) {
     console.log('Client ' + socket.id + ' connected!');
 
@@ -63,6 +70,7 @@ io.on('connection', function (socket) {
 
 
             
+            
             socket_orquestador.on('ENDPOINT', function (endpoint) {
                 console.log("Endpoint de Orquestador recibido!");
                 console.log(endpoint);
@@ -82,8 +90,10 @@ io.on('connection', function (socket) {
 
 
 
-
         }));
+
+
+       
 
        
 
@@ -100,12 +110,7 @@ io.on('connection', function (socket) {
 
 
 
-// Add a connect listener
-socket_orquestador.on('connect', function (socket_orquestador) {
 
-    console.log('Router Conectado a Orquestador!');
-
-});
 
 function writePromise(msg, messageId, socket) {
 

@@ -53,6 +53,7 @@ io.on('connection', function (socket) {
 
             subscribePromise(topic, socket).then((resp) => {
                 console.log("Consumidor subscripto a Topic " + topic);
+                console.log(topics);
 
             }).catch((err) => {
 
@@ -89,7 +90,7 @@ function writePromise(msg) {
 function subscribePromise(topic, consumer_socket) {
 
     return new Promise((resolve, reject) => {
-        var subs = topics.get(msg.topic).subscribers;
+        var subs = topics.get(topic).subscribers;
         if (subs != null) {
             subs.push(consumer_socket);
             resolve("Done");

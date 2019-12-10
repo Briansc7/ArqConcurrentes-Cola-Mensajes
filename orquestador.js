@@ -24,8 +24,9 @@ server.listen(PORT, () => {
     console.log(`Server running in http://localhost:${PORT}`)
 });
 
-app_rest.get('/queue', (req, res) => {
- res.status(200).send({response: "API OK!" });
+app_rest.post('/queue', (req, res) => {
+     
+    res.status(200).send({response: "API OK!" });
 
 });
 
@@ -67,7 +68,7 @@ io.on('connection', function (socket) {
             // aca devolver el Endpoint del Nodo al Router para que este se lo devuelva al Consumer
             var endpoint = topics.get(topic);
             console.log(endpoint);
-            if (endpoint =! null) {
+            if (endpoint != null) {
             writePromise(endpoint, 'ENDPOINT', socket).then((resp) => {
                 console.log("Mensaje de retorno enviado al Router con el Endpoint");
 

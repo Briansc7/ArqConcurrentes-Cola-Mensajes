@@ -9,12 +9,13 @@ var MsgSender = require('./utilities/msgSender.js');
 var clientManager = new ClientManager(config.router_endpoint + config.router_port);
 var socket_router = clientManager.get_client_socket();
 var socket_nodo_datos;
+var topicASubscribir;
 var msgSender = new MsgSender();
 
 socket_router.on('connect', function (socket) {
     console.log('Consumidor conectado a Router!');
-    var topicASubscribir = process.argv[2];
-    subscribePromise(topicASubscribir, "SUBSCRIBER", socket_router).then(resp => {
+    topicASubscribir = process.argv[2];
+    subscribeToRouterPromise(topicASubscribir, "SUBSCRIBER", socket_router).then(resp => {
 
         console.log("Consumidor se quiere subscribir a topic " + topicASubscribir);
     });
@@ -28,41 +29,61 @@ socket_router.on('connect', function (socket) {
 
 
 socket_router.on('ENDPOINT', function (endpoint) {
-
-
-
-    console.log("Endpoint recibido de router: " + endpoint);
-    /*connectToNodePromise(endpoint).then(socket => {
+   console.log("Endpoint recibido de router: " + endpoint);
+    connectToNodePromise(endpoint).then(socket => {
 
         socket_nodo_datos = socket;
-    });*/
+
+        socket_nodo_datos.on('connect', function (socket) {
+    
+
+            /*socket.on('PRODUCER-from-datos', function (msg) {
+                console.log('Mensaje recibio de Nodo!');
+                console.log("Message: " + msg.details + " Topic: " + msg.topic);
+                       
+        
+                
+            });*/
+        
+            subscribeToNodePromise('SUBSCRIBER').then(() => {
+
+                console.log("Consumidor se subscribio a topic "+topicASubscribir);
+
+
+            })
+        
+        });
+    });
 
 
 
 });
 
 
-/*socket_nodo_datos.on('connection', function (socket) {
-    console.log('Client ' + socket.id + ' connected!');
-
-    socket.on('PRODUCER-from-datos', function (msg) {
-        console.log('Mensaje recibio de Nodo!');
-        console.log("Message: " + msg.details + " Topic: " + msg.topic);
-               
-
-        
-    });
-
-});*/
 
 
 
 
-function subscribePromise(topicASubscribir, messageId, socket_router) {
+
+function subscribeToRouterPromise(topicASubscribir, messageId, socket_router) {
 
     return new Promise((resolve, reject) => {
 
         msgSender.send(topicASubscribir, messageId, socket_router);
+        resolve("Done");
+
+
+    });
+
+
+}
+
+
+function subscribeToNodePromise(messageId) {
+
+    return new Promise((resolve, reject) => {
+
+        msgSender.send(topicASubscribir, messageId, socket_nodo_datos);
         resolve("Done");
 
 
