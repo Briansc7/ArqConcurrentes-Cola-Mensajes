@@ -31,11 +31,17 @@ io.on('connection', function (socket) {
         console.log("Productor conectado desde Orquestador!");
         console.log("Message: " + msg.details + " Topic: " + msg.topic);
         // aca escribir en Queue segun topic
-        writePromise(msg).then((resp) => {
+        writePromise(msg).then((queueMode) => {
             console.log("Mensaje escrito en Topic " + msg.topic);
             console.log(topics);
-            //sendMessagesPromise
+            if (queueMode == 'PubSub') {
 
+               return deliverMessagesPubSubPromise(msg.topic);
+            }
+
+        }).then(() => {
+
+              console.log("Mensajes enviados a Consumidores!");
         }).catch((err) => {
 
             console.log(err);
@@ -53,6 +59,7 @@ io.on('connection', function (socket) {
 
             subscribePromise(topic, socket).then((resp) => {
                 console.log("Consumidor subscripto a Topic " + topic);
+                console.log(topics);
 
             }).catch((err) => {
 
@@ -74,7 +81,7 @@ function writePromise(msg) {
         var topic = topics.get(msg.topic);
         if (topic != null) {
             topic.queue.push(msg.details);
-            resolve("Done");
+            resolve(topic.mode);
         } else {
 
             reject("El Topic no existe");
@@ -89,7 +96,7 @@ function writePromise(msg) {
 function subscribePromise(topic, consumer_socket) {
 
     return new Promise((resolve, reject) => {
-        var subs = topics.get(msg.topic).subscribers;
+        var subs = topics.get(topic).subscribers;
         if (subs != null) {
             subs.push(consumer_socket);
             resolve("Done");
@@ -101,6 +108,47 @@ function subscribePromise(topic, consumer_socket) {
 
 
     });
+}
+
+function deliverMessagesPubSubPromise(topic) {
+
+    return new Promise((resolve, reject) => {
+
+        var msgQueue = topics.get(topic).queue;
+        var subscribers = topics.get(topic).subscribers;
+
+        msgQueue.forEach(msg => {
+          subscribers.forEach(sub => {
+
+            sendMessagePromise(msg, "QUEUE_MESSAGE" ,sub).then(resp => {
+                console.log("Mensaje enviado en modo PubSub a Consumidor!");
+                resolve();
+
+
+            });
+
+          });
+
+        });
+        
+
+    });
+
+
+
+
+}
+
+function sendMessagePromise(msg, messageId, socket) {
+
+    return new Promise((resolve, reject) => {
+        msgSender.send(msg, messageId, socket);
+        resolve("send promise done");
+
+
+    });
+
+
 }
 
 
@@ -119,7 +167,7 @@ function initTopics() {
 
     });
 
-    config.nodo_datos2.topics.forEach(queue => {
+    /*config.nodo_datos2.topics.forEach(queue => {
 
         topics.set(queue.topic, {
             "queue": [],
@@ -128,7 +176,7 @@ function initTopics() {
         });
 
 
-    });
+    });*/
 
     console.log("NODO DE DATOS INICIADO");
     console.log(topics);
