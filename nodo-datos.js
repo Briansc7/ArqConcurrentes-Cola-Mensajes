@@ -17,6 +17,9 @@ var msgSender = new MsgSender();
 var socket_consumer;
 var topics = initTopics();
 
+const editJsonFile = require("edit-json-file");
+let file = editJsonFile('./config/config.json');
+
 
 //corriendo el servidor
 server.listen(PORT, () => {
@@ -184,6 +187,8 @@ function createQueuePromise(topic, mode) {
                 topic: topic,
                 mode: mode
             };
+            //ahora se edita el json
+            file.set("nodo_datos1.topics",result);
             resolve(result);
         } else {
 
