@@ -4,6 +4,7 @@ const express = require('express');
 const socketio = require('socket.io');
 const http = require('http');
 var app_rest = express();
+app_rest.use(express.json());
 
 function ServerManager(port){
     this.app = express()//instancia de express

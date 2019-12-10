@@ -25,8 +25,10 @@ server.listen(PORT, () => {
 });
 
 app_rest.post('/queue', (req, res) => {
-     
-    res.status(200).send({response: "API OK!" });
+    //res.status(200).send({response: "API OK!" });
+    console.log("Recibido Post en /queue");
+    console.log(`Topic: ${req.body.topic}`);
+    res.status(200).send(req.body);
 
 });
 
