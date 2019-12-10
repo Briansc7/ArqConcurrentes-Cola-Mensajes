@@ -52,6 +52,8 @@ io.on('connection', function (socket) {
     },
 
 
+
+
         socket.on('SUBSCRIBER', (topic) => {
 
             console.log("Topic: " + topic);
@@ -67,7 +69,24 @@ io.on('connection', function (socket) {
                 console.log(err);
             })
 
-        }));
+        }),
+
+    socket.on('CREATE-QUEUE', (request) => {
+
+        console.log("Pedido de creacion de cola recibido, con Topic: " + request.topic+" y modo: "+ request.mode);
+        // aca registrar al socket del Consumidor con el topic
+
+        createQueuePromise(request.topic, request.mode).then((resp) => {
+            console.log("Creada cola con topic " + resp.topic+" y modo: "+resp.mode);
+            console.log(topics);
+
+        }).catch((err) => {
+
+
+            console.log(err);
+        })
+
+    }));
 
 
 
@@ -149,6 +168,28 @@ function sendMessagePromise(msg, messageId, socket) {
     });
 
 
+}
+
+function createQueuePromise(topic, mode) {
+
+    return new Promise((resolve, reject) => {
+        var topicExist = topics.get(topic);
+        if (topicExist == null) {
+            topics.set(topic, {
+                "queue": [],
+                "mode": mode,
+                "subscribers": []
+            });
+            const result = {
+                topic: topic,
+                mode: mode
+            };
+            resolve(result);
+        } else {
+
+            reject("El Topic ya existe existe");
+        }
+    });
 }
 
 

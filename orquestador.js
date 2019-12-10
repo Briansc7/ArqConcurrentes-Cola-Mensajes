@@ -26,9 +26,24 @@ server.listen(PORT, () => {
 
 app_rest.post('/queue', (req, res) => {
     //res.status(200).send({response: "API OK!" });
-    console.log("Recibido Post en /queue");
-    console.log(`Topic: ${req.body.topic}`);
-    res.status(200).send(req.body);
+    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxsize}`);
+    //por el momento lo agregamos al nodo de datos 1
+    var msg = {
+        details: 'Pedido de creacion de cola',
+        topic: req.body.topic,
+        mode: req.body.mode,
+        maxsize: req.body.maxsize,
+
+    };
+    writePromise(msg,'CREATE-QUEUE',socket_nodo_datos).then(() => {
+        console.log("Pedido de creacion de cola enviado al nodo de datos");//se podria esperar a tener una respuesta del nodo de datos para darlo por exitoso
+        res.status(200).send(req.body);
+    }).catch((err) => {
+
+        console.log(err);
+    });
+
+
 
 });
 
