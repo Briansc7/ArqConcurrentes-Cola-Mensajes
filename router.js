@@ -27,6 +27,13 @@ server.listen(PORT, () => {
     console.log(`Server running in http://localhost:${PORT}`)
 });
 
+// Add a connect listener
+socket_orquestador.on('connect', function (socket_orquestador) {
+
+    console.log('Router Conectado a Orquestador!');
+
+});
+
 io.on('connection', function (socket) {
     console.log('Client ' + socket.id + ' connected!');
 
@@ -63,27 +70,15 @@ io.on('connection', function (socket) {
 
 
             
-            socket_orquestador.on('ENDPOINT', function (endpoint) {
-                console.log("Endpoint de Orquestador recibido!");
-                console.log(endpoint);
             
-            
-            
-                writePromise(endpoint, 'ENDPOINT', socket_consumidor).then((resp) => {
-                    console.log("Endpoint enviado al Consumidor!");
-            
-                }).catch((err) => {
-            
-                    console.log(err);
-                })
-            
-            
-            });
-
+          
 
 
 
         }));
+
+
+       
 
        
 
@@ -97,15 +92,28 @@ io.on('connection', function (socket) {
 });
 
 
+socket_orquestador.on('ENDPOINT', function (endpoint) {
+    console.log("Endpoint de Orquestador recibido!");
+    console.log(endpoint);
 
 
 
-// Add a connect listener
-socket_orquestador.on('connect', function (socket_orquestador) {
+    writePromise(endpoint, 'ENDPOINT', socket_consumidor).then((resp) => {
+        console.log("Endpoint enviado al Consumidor!");
 
-    console.log('Router Conectado a Orquestador!');
+    }).catch((err) => {
+
+        console.log(err);
+    })
+
 
 });
+
+
+
+
+
+
 
 function writePromise(msg, messageId, socket) {
 

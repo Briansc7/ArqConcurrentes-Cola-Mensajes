@@ -10,17 +10,49 @@ var ServerManager = require('./utilities/serverManager.js');
 var serverManager = new ServerManager(config.orquestador_port);
 const io = serverManager.get_io();
 const PORT = serverManager.get_port();
+const http_port = 8080;
 const server = serverManager.get_server();
+const app_rest = serverManager.get_app_rest();
+
+app_rest.listen(http_port, () => {
+
+    console.log("Escuchando en el 8080 para API");
+});
+
+//corriendo el servidor
+server.listen(PORT, () => {
+    console.log(`Server running in http://localhost:${PORT}`)
+});
+
+app_rest.post('/queue', (req, res) => {
+    //res.status(200).send({response: "API OK!" });
+    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxsize}`);
+    //por el momento lo agregamos al nodo de datos 1
+    var msg = {
+        details: 'Pedido de creacion de cola',
+        topic: req.body.topic,
+        mode: req.body.mode,
+        maxsize: req.body.maxsize,
+
+    };
+    writePromise(msg,'CREATE-QUEUE',socket_nodo_datos).then(() => {
+        console.log("Pedido de creacion de cola enviado al nodo de datos");//se podria esperar a tener una respuesta del nodo de datos para darlo por exitoso
+        res.status(200).send(req.body);
+    }).catch((err) => {
+
+        console.log(err);
+    });
+
+
+
+});
 
 var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
 var topics = getTopics();
 
-//corriendo el servidor
-server.listen(PORT, () => {
-    console.log(`Server running in http://localhost:${PORT}`)
-});
+
 
 
 io.on('connection', function (socket) {
@@ -53,7 +85,7 @@ io.on('connection', function (socket) {
             // aca devolver el Endpoint del Nodo al Router para que este se lo devuelva al Consumer
             var endpoint = topics.get(topic);
             console.log(endpoint);
-            if (endpoint =! null) {
+            if (endpoint != null) {
             writePromise(endpoint, 'ENDPOINT', socket).then((resp) => {
                 console.log("Mensaje de retorno enviado al Router con el Endpoint");
 

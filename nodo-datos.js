@@ -17,6 +17,9 @@ var msgSender = new MsgSender();
 var socket_consumer;
 var topics = initTopics();
 
+const editJsonFile = require("edit-json-file");
+let file = editJsonFile('./config/config.json');
+
 
 //corriendo el servidor
 server.listen(PORT, () => {
@@ -31,11 +34,17 @@ io.on('connection', function (socket) {
         console.log("Productor conectado desde Orquestador!");
         console.log("Message: " + msg.details + " Topic: " + msg.topic);
         // aca escribir en Queue segun topic
-        writePromise(msg).then((resp) => {
+        writePromise(msg).then((queueMode) => {
             console.log("Mensaje escrito en Topic " + msg.topic);
             console.log(topics);
-            //sendMessagesPromise
+            if (queueMode == 'PubSub') {
 
+               return deliverMessagesPubSubPromise(msg.topic);
+            }
+
+        }).then(() => {
+
+              console.log("Mensajes enviados a Consumidores!");
         }).catch((err) => {
 
             console.log(err);
@@ -46,6 +55,8 @@ io.on('connection', function (socket) {
     },
 
 
+
+
         socket.on('SUBSCRIBER', (topic) => {
 
             console.log("Topic: " + topic);
@@ -53,6 +64,7 @@ io.on('connection', function (socket) {
 
             subscribePromise(topic, socket).then((resp) => {
                 console.log("Consumidor subscripto a Topic " + topic);
+                console.log(topics);
 
             }).catch((err) => {
 
@@ -60,7 +72,24 @@ io.on('connection', function (socket) {
                 console.log(err);
             })
 
-        }));
+        }),
+
+    socket.on('CREATE-QUEUE', (request) => {
+
+        console.log("Pedido de creacion de cola recibido, con Topic: " + request.topic+" y modo: "+ request.mode);
+        // aca registrar al socket del Consumidor con el topic
+
+        createQueuePromise(request.topic, request.mode).then((resp) => {
+            console.log("Creada cola con topic " + resp.topic+" y modo: "+resp.mode);
+            console.log(topics);
+
+        }).catch((err) => {
+
+
+            console.log(err);
+        })
+
+    }));
 
 
 
@@ -74,7 +103,7 @@ function writePromise(msg) {
         var topic = topics.get(msg.topic);
         if (topic != null) {
             topic.queue.push(msg.details);
-            resolve("Done");
+            resolve(topic.mode);
         } else {
 
             reject("El Topic no existe");
@@ -89,7 +118,7 @@ function writePromise(msg) {
 function subscribePromise(topic, consumer_socket) {
 
     return new Promise((resolve, reject) => {
-        var subs = topics.get(msg.topic).subscribers;
+        var subs = topics.get(topic).subscribers;
         if (subs != null) {
             subs.push(consumer_socket);
             resolve("Done");
@@ -100,6 +129,75 @@ function subscribePromise(topic, consumer_socket) {
 
 
 
+    });
+}
+
+function deliverMessagesPubSubPromise(topic) {
+
+    return new Promise((resolve, reject) => {
+
+        var msgQueue = topics.get(topic).queue;
+        var subscribers = topics.get(topic).subscribers;
+
+        msgQueue.forEach(msg => {
+          subscribers.forEach(sub => {
+
+            sendMessagePromise(msg, "QUEUE_MESSAGE" ,sub).then(resp => {
+                console.log("Mensaje enviado en modo PubSub a Consumidor!");
+                resolve();
+
+
+            });
+
+          });
+
+        });
+        
+
+    });
+
+
+
+
+}
+
+function sendMessagePromise(msg, messageId, socket) {
+
+    return new Promise((resolve, reject) => {
+        msgSender.send(msg, messageId, socket);
+        resolve("send promise done");
+
+
+    });
+
+
+}
+
+function createQueuePromise(topic, mode) {
+
+    return new Promise((resolve, reject) => {
+        var topicExist = topics.get(topic);
+        if (topicExist == null) {
+            topics.set(topic, {
+                "queue": [],
+                "mode": mode,
+                "subscribers": []
+            });
+            const newtopic = {
+                topic: topic,
+                mode: mode
+            };
+            //ahora se edita el json en disco
+            const fullTopics = file.get("nodo_datos1.topics");//obtengo el array de topics actuales
+            var stringFullTopics = JSON.stringify(fullTopics).slice(0, -1);//elimino el ] del final del string
+            stringFullTopics = stringFullTopics + ","+JSON.stringify(newtopic)+"]"; //agrego el nuevo topic como string y agrego el } del final
+            file.set("nodo_datos1.topics",JSON.parse(stringFullTopics)); //guardo el nuevo array de topics en disco
+            file.save(); //ejecuto la grabacion en disco
+            resolve(newtopic);
+        } else {
+
+            reject("El Topic ya existe existe");
+        }
     });
 }
 
@@ -119,7 +217,7 @@ function initTopics() {
 
     });
 
-    config.nodo_datos2.topics.forEach(queue => {
+    /*config.nodo_datos2.topics.forEach(queue => {
 
         topics.set(queue.topic, {
             "queue": [],
@@ -128,7 +226,7 @@ function initTopics() {
         });
 
 
-    });
+    });*/
 
     console.log("NODO DE DATOS INICIADO");
     console.log(topics);
