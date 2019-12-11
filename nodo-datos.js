@@ -6,7 +6,11 @@ var config = require('./config/config.json');
 const process = require('process');
 var node_name = process.argv[2];
 
-var serverManager = new ServerManager(config.nodo_datos1.port);
+const editJsonFile = require("edit-json-file");
+let file = editJsonFile('./config/config.json');
+
+//var serverManager = new ServerManager(config.nodo_datos1.port);
+var serverManager = new ServerManager(getDataNodePort(node_name));
 const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();
@@ -17,8 +21,7 @@ var msgSender = new MsgSender();
 var socket_consumer;
 var topics = initTopics();
 
-const editJsonFile = require("edit-json-file");
-let file = editJsonFile('./config/config.json');
+
 
 
 //corriendo el servidor
@@ -188,7 +191,7 @@ function createQueuePromise(topic, mode) {
                 mode: mode
             };
             //ahora se edita el json en disco
-            const fullTopics = file.get("nodo_datos1.topics");//obtengo el array de topics actuales
+            const fullTopics = file.get(getDataNodePort(node_name)+".topics");//obtengo el array de topics actuales
             var stringFullTopics = JSON.stringify(fullTopics).slice(0, -1);//elimino el ] del final del string
             stringFullTopics = stringFullTopics + ","+JSON.stringify(newtopic)+"]"; //agrego el nuevo topic como string y agrego el } del final
             file.set("nodo_datos1.topics",JSON.parse(stringFullTopics)); //guardo el nuevo array de topics en disco
@@ -205,7 +208,8 @@ function createQueuePromise(topic, mode) {
 function initTopics() {
 
     var topics = new Map();
-    config.nodo_datos1.topics.forEach(queue => {
+    getDataNodeTopics(node_name).forEach(queue => {
+    //config.nodo_datos1.topics.forEach(queue => {
 
         topics.set(queue.topic, {
             "queue": [],
@@ -236,5 +240,15 @@ function initTopics() {
     return topics;
 
 
+}
+
+function getDataNodePort(dataNodeName){
+    return JSON.stringify(
+        file.get(dataNodeName+".port")
+    );
+}
+
+function getDataNodeTopics(dataNodeName){
+    return file.get(dataNodeName+".topics");
 }
 
