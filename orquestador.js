@@ -3,8 +3,13 @@
 
 var ClientManager = require('./utilities/clientManager.js');
 var config = require('./config/config.json');
-var clientManager = new ClientManager(config.nodo_datos1.endpoint + config.nodo_datos1.port);
-var socket_nodo_datos = clientManager.get_client_socket();
+const editJsonFile = require("edit-json-file");
+let file = editJsonFile('./config/config.json');
+
+var clientManager1 = new ClientManager(config.nodo_datos1.endpoint + config.nodo_datos1.port);
+var socket_nodo_datos1 = clientManager1.get_client_socket();
+var clientManager2 = new ClientManager(config.nodo_datos2.endpoint + config.nodo_datos2.port);
+var socket_nodo_datos2 = clientManager2.get_client_socket();
 
 var ServerManager = require('./utilities/serverManager.js');
 var serverManager = new ServerManager(config.orquestador_port);
@@ -64,14 +69,35 @@ io.on('connection', function (socket) {
 
         console.log("Message: " + msg.details + " Topic: " + msg.topic);
         // aca enviar mensaje al Nodo segun topic. Y despues mandar replica de mensaje al otro Nodo
-        writePromise(msg, 'PRODUCER-from-orquestador', socket_nodo_datos).then((resp) => {
-            console.log("Mensaje enviado al nodo correspondiente segun Topic");
+        //Por el momento no mandamos la replica
 
-                     }).catch((err) => {
+        //comprobar a cual nodo de datos pertenece el topic
+        var socket_nodo_datos_con_topic = null;
+        var topic = getDataNodeTopicsMap("nodo_datos1").get(msg.topic);
+
+        if(topic != null)
+            socket_nodo_datos_con_topic = socket_nodo_datos1;
+
+        topic = getDataNodeTopicsMap("nodo_datos2").get(msg.topic);
+
+        if(topic != null)
+                socket_nodo_datos_con_topic = socket_nodo_datos2;
+
+        if(socket_nodo_datos_con_topic == null){
+            console.log("No existe el topic");
+        }
+        else{
+            writePromise(msg, 'PRODUCER-from-orquestador', socket_nodo_datos_con_topic).then((resp) => {
+                console.log("Mensaje enviado al nodo correspondiente segun Topic");
+
+            }).catch((err) => {
 
 
-                         console.log(err);
-                     });
+                console.log(err);
+            });
+        }
+
+
 
 
 
@@ -107,8 +133,13 @@ io.on('connection', function (socket) {
 });
 
 // Add a connect listener
-socket_nodo_datos.on('connect', function (socket_nodo_datos) {
+socket_nodo_datos1.on('connect', function (socket_nodo_datos) {
     console.log('Orquestador conectado a Nodo1!');
+
+});
+
+socket_nodo_datos2.on('connect', function (socket_nodo_datos) {
+    console.log('Orquestador conectado a Nodo2!');
 
 });
 
@@ -150,4 +181,18 @@ function getTopics() {
 
     return topics;
 
+}
+
+function getDataNodeTopicsMap(dataNodeName){
+    var topics = new Map();
+    getDataNodeTopics(dataNodeName).forEach(queue => {
+
+        topics.set(queue.topic, config.nodo_datos1.endpoint + config.nodo_datos1.port);
+    });
+
+    return topics;
+}
+
+function getDataNodeTopics(dataNodeName){
+    return file.get(dataNodeName+".topics");
 }
