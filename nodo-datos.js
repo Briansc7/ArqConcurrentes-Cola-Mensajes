@@ -183,13 +183,17 @@ function createQueuePromise(topic, mode) {
                 "mode": mode,
                 "subscribers": []
             });
-            const result = {
+            const newtopic = {
                 topic: topic,
                 mode: mode
             };
-            //ahora se edita el json
-            file.set("nodo_datos1.topics",result);
-            resolve(result);
+            //ahora se edita el json en disco
+            const fullTopics = file.get("nodo_datos1.topics");//obtengo el array de topics actuales
+            var stringFullTopics = JSON.stringify(fullTopics).slice(0, -1);//elimino el ] del final del string
+            stringFullTopics = stringFullTopics + ","+JSON.stringify(newtopic)+"]"; //agrego el nuevo topic como string y agrego el } del final
+            file.set("nodo_datos1.topics",JSON.parse(stringFullTopics)); //guardo el nuevo array de topics en disco
+            file.save(); //ejecuto la grabacion en disco
+            resolve(newtopic);
         } else {
 
             reject("El Topic ya existe existe");
