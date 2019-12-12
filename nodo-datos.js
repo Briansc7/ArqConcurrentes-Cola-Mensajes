@@ -191,10 +191,10 @@ function createQueuePromise(topic, mode) {
                 mode: mode
             };
             //ahora se edita el json en disco
-            const fullTopics = file.get(getDataNodePort(node_name)+".topics");//obtengo el array de topics actuales
+            const fullTopics = file.get(node_name+".topics");//obtengo el array de topics actuales
             var stringFullTopics = JSON.stringify(fullTopics).slice(0, -1);//elimino el ] del final del string
             stringFullTopics = stringFullTopics + ","+JSON.stringify(newtopic)+"]"; //agrego el nuevo topic como string y agrego el } del final
-            file.set("nodo_datos1.topics",JSON.parse(stringFullTopics)); //guardo el nuevo array de topics en disco
+            file.set(node_name+".topics",JSON.parse(stringFullTopics)); //guardo el nuevo array de topics en disco
             file.save(); //ejecuto la grabacion en disco
             resolve(newtopic);
         } else {
