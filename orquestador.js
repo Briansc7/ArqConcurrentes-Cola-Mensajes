@@ -31,7 +31,7 @@ server.listen(PORT, () => {
 
 app_rest.post('/queue', (req, res) => {
     //res.status(200).send({response: "API OK!" });
-    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxsize}`);
+    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxsize}, Nodo de datos: ${req.body.datanode}`);
     //por el momento lo agregamos al nodo de datos 1
     var msg = {
         details: 'Pedido de creacion de cola',
@@ -40,13 +40,27 @@ app_rest.post('/queue', (req, res) => {
         maxsize: req.body.maxsize,
 
     };
-    writePromise(msg,'CREATE-QUEUE',socket_nodo_datos).then(() => {
-        console.log("Pedido de creacion de cola enviado al nodo de datos");//se podria esperar a tener una respuesta del nodo de datos para darlo por exitoso
-        res.status(200).send(req.body);
-    }).catch((err) => {
+    var socket_nodo_datos = null;
+    if (req.body.datanode == "nodo_datos1")
+        socket_nodo_datos = socket_nodo_datos1;
+    if (req.body.datanode == "nodo_datos2")
+        socket_nodo_datos = socket_nodo_datos2;
+    if (socket_nodo_datos != null){
+        writePromise(msg,'CREATE-QUEUE',socket_nodo_datos).then(() => {
+            console.log("Pedido de creacion de cola enviado al nodo de datos");//se podria esperar a tener una respuesta del nodo de datos para darlo por exitoso
+            res.status(200).send(req.body);
+        }).catch((err) => {
 
-        console.log(err);
-    });
+            console.log(err);
+        });
+    }
+    else{
+        console.log("Nodo de datos invalido");
+        res.status(404).send({
+            error: 'Nodo de datos invalido'
+        });
+    }
+
 
 
 
