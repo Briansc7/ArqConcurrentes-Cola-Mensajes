@@ -20,9 +20,7 @@ var msgSender = new MsgSender();
 
 var socket_consumer;
 var topics = initTopics();
-
-
-
+var consumerCount = 0
 
 //corriendo el servidor
 server.listen(PORT, () => {
@@ -42,12 +40,18 @@ io.on('connection', function (socket) {
             console.log(topics);
             if (queueMode == 'PubSub') {
 
-               return deliverMessagesPubSubPromise(msg.topic);
+                return deliverMessagesPubSubPromise(msg.topic);
+            } else if (queueMode == 'RR') {
+
+                return deliverMessagesRoundRobinPromise(msg.topic);
+            } else {
+
+                console.log("Modo de trabajo de cola incorrecto");
             }
 
         }).then(() => {
 
-              console.log("Mensajes enviados a Consumidores!");
+            console.log("Mensajes enviados a Consumidores!");
         }).catch((err) => {
 
             console.log(err);
@@ -142,25 +146,77 @@ function deliverMessagesPubSubPromise(topic) {
         var msgQueue = topics.get(topic).queue;
         var subscribers = topics.get(topic).subscribers;
 
-        msgQueue.forEach(msg => {
-          subscribers.forEach(sub => {
+        if (subscribers.length > 0) {
 
-            sendMessagePromise(msg, "QUEUE_MESSAGE" ,sub).then(resp => {
-                console.log("Mensaje enviado en modo PubSub a Consumidor!");
-                resolve();
+            msgQueue.forEach(msg => {
+                subscribers.forEach(sub => {
 
+                    sendMessagePromise(msg, "QUEUE_MESSAGE", sub).then(resp => {
+                        console.log("Mensaje enviado en modo PubSub a Consumidor!");
+
+
+
+
+                    });
+
+                });
 
             });
 
-          });
+        topics.get(topic).queue = []; // borro mensajes una vez que se enviaron todos, siempre y cuando haya consumidores subscriptos, sino no hace nada
+        resolve();
+        } else {
 
-        });
+            reject("No hay consumidores subscriptos a Topic " + topic);
+        }
+
+
+
         
+
 
     });
 
 
 
+
+}
+
+function deliverMessagesRoundRobinPromise(topic) {
+
+    return new Promise((resolve, reject) => {
+
+        var msgQueue = topics.get(topic).queue;
+        var subscribers = topics.get(topic).subscribers;
+
+        if (subscribers.length > 0) {
+
+            msgQueue.forEach(msg => {
+
+                var sub = subscribers[consumerCount];
+
+                sendMessagePromise(msg, "QUEUE_MESSAGE", sub).then(resp => {
+                    console.log("Mensaje enviado en modo Round Robin a Consumidor!");
+
+                });
+
+                consumerCount++;
+                if (consumerCount == subscribers.length) {
+                    consumerCount = 0;
+                }
+
+             });
+
+            topics.get(topic).queue = [];
+
+        resolve();
+
+        } else {
+
+            reject("No hay consumidores subscriptos a Topic " + topic);
+        }
+
+});
 
 }
 
