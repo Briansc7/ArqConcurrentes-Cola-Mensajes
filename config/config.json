@@ -13,11 +13,13 @@
     "topics": [
       {
         "topic": "Alerts",
-        "mode": "PubSub"
+        "mode": "PubSub",
+        "maxSize": 10
       },
       {
         "topic": "Errors",
-        "mode": "RR"
+        "mode": "RR",
+        "maxSize": 8
       }
     ]
   },
@@ -27,11 +29,13 @@
     "topics": [
       {
         "topic": "Warnings",
-        "mode": "PubSub"
+        "mode": "PubSub",
+        "maxSize": 10
       },
       {
         "topic": "Details",
-        "mode": "RR"
+        "mode": "RR",
+        "maxSize": 10
       }
     ]
   }

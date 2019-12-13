@@ -121,13 +121,13 @@ io.on('connection', function (socket) {
     socket.on('CREATE-QUEUE', (pedido_queue) => {
 
 
-        console.log(`Recibido pedido de creacion de cola, Topic: ${pedido_queue.topic}, Modo: ${pedido_queue.mode}, MaxSize: ${pedido_queue.maxsize}, Nodo de datos: ${pedido_queue.datanode}`);
+        console.log(`Recibido pedido de creacion de cola, Topic: ${pedido_queue.topic}, Modo: ${pedido_queue.mode}, MaxSize: ${pedido_queue.maxSize}, Nodo de datos: ${pedido_queue.datanode}`);
         //por el momento lo agregamos al nodo de datos 1
         var msg = {
             details: 'Pedido de creacion de cola',
             topic: pedido_queue.topic,
             mode: pedido_queue.mode,
-            maxsize: pedido_queue.maxsize,
+            maxSize: pedido_queue.maxSize,
 
         };
 

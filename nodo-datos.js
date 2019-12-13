@@ -20,9 +20,7 @@ var msgSender = new MsgSender();
 
 var socket_consumer;
 var topics = initTopics();
-
-
-
+var consumerCount = 0
 
 //corriendo el servidor
 server.listen(PORT, () => {
@@ -42,12 +40,18 @@ io.on('connection', function (socket) {
             console.log(topics);
             if (queueMode == 'PubSub') {
 
-               return deliverMessagesPubSubPromise(msg.topic);
+                return deliverMessagesPubSubPromise(msg.topic);
+            } else if (queueMode == 'RR') {
+
+                return deliverMessagesRoundRobinPromise(msg.topic);
+            } else {
+
+                console.log("Modo de trabajo de cola incorrecto");
             }
 
         }).then(() => {
 
-              console.log("Mensajes enviados a Consumidores!");
+            console.log("Mensajes enviados a Consumidores!");
         }).catch((err) => {
 
             console.log(err);
@@ -79,10 +83,10 @@ io.on('connection', function (socket) {
 
     socket.on('CREATE-QUEUE', (request) => {
 
-        console.log("Pedido de creacion de cola recibido, con Topic: " + request.topic+" y modo: "+ request.mode);
+        console.log("Pedido de creacion de cola recibido, con Topic: " + request.topic+", modo: "+ request.mode + " y maxzise: " + request.maxSize);
         // aca registrar al socket del Consumidor con el topic
 
-        createQueuePromise(request.topic, request.mode).then((resp) => {
+        createQueuePromise(request.topic, request.mode, request.maxSize).then((resp) => {
             console.log("Creada cola con topic " + resp.topic+" y modo: "+resp.mode);
             console.log(topics);
 
@@ -110,8 +114,15 @@ function writePromise(msg) {
     return new Promise((resolve, reject) => {
         var topic = topics.get(msg.topic);
         if (topic != null) {
-            topic.queue.push(msg.details);
-            resolve(topic.mode);
+            if (topic.queue.length == topic.maxSize) {
+                console.log(topics);
+                reject("El Topic "+msg.topic+ " llego a la maxima cantidad de mensajes: "+topic.maxSize);
+            } else {
+                topic.queue.push(msg.details);
+                resolve(topic.mode);
+
+            }
+           
         } else {
 
             reject("El Topic no existe");
@@ -147,25 +158,77 @@ function deliverMessagesPubSubPromise(topic) {
         var msgQueue = topics.get(topic).queue;
         var subscribers = topics.get(topic).subscribers;
 
-        msgQueue.forEach(msg => {
-          subscribers.forEach(sub => {
+        if (subscribers.length > 0) {
 
-            sendMessagePromise(msg, "QUEUE_MESSAGE" ,sub).then(resp => {
-                console.log("Mensaje enviado en modo PubSub a Consumidor!");
-                resolve();
+            msgQueue.forEach(msg => {
+                subscribers.forEach(sub => {
 
+                    sendMessagePromise(msg, "QUEUE_MESSAGE", sub).then(resp => {
+                        console.log("Mensaje enviado en modo PubSub a Consumidor!");
+
+
+
+
+                    });
+
+                });
 
             });
 
-          });
+        topics.get(topic).queue = []; // borro mensajes una vez que se enviaron todos, siempre y cuando haya consumidores subscriptos, sino no hace nada
+        resolve();
+        } else {
 
-        });
+            reject("No hay consumidores subscriptos a Topic " + topic);
+        }
+
+
+
         
+
 
     });
 
 
 
+
+}
+
+function deliverMessagesRoundRobinPromise(topic) {
+
+    return new Promise((resolve, reject) => {
+
+        var msgQueue = topics.get(topic).queue;
+        var subscribers = topics.get(topic).subscribers;
+
+        if (subscribers.length > 0) {
+
+            msgQueue.forEach(msg => {
+
+                var sub = subscribers[consumerCount];
+
+                sendMessagePromise(msg, "QUEUE_MESSAGE", sub).then(resp => {
+                    console.log("Mensaje enviado en modo Round Robin a Consumidor!");
+
+                });
+
+                consumerCount++;
+                if (consumerCount == subscribers.length) {
+                    consumerCount = 0;
+                }
+
+             });
+
+            topics.get(topic).queue = [];
+
+        resolve();
+
+        } else {
+
+            reject("No hay consumidores subscriptos a Topic " + topic);
+        }
+
+});
 
 }
 
@@ -181,7 +244,7 @@ function sendMessagePromise(msg, messageId, socket) {
 
 }
 
-function createQueuePromise(topic, mode) {
+function createQueuePromise(topic, mode, maxSize) {
 
     return new Promise((resolve, reject) => {
         var topicExist = topics.get(topic);
@@ -189,11 +252,13 @@ function createQueuePromise(topic, mode) {
             topics.set(topic, {
                 "queue": [],
                 "mode": mode,
+                "maxSize": maxSize,
                 "subscribers": []
             });
             const newtopic = {
                 topic: topic,
-                mode: mode
+                mode: mode,
+                maxSize: maxSize
             };
             //ahora se edita el json en disco
             const fullTopics = file.get(node_name+".topics");//obtengo el array de topics actuales
@@ -219,6 +284,7 @@ function initTopics() {
         topics.set(queue.topic, {
             "queue": [],
             "mode": queue.mode,
+            "maxSize": queue.maxSize,
             "subscribers": []
         });
 

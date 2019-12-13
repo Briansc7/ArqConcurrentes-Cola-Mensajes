@@ -47,7 +47,7 @@ app_rest.post('/queue', (req, res) => {
         details: 'Pedido de creacion de cola',
         topic: req.body.topic,
         mode: req.body.mode,
-        maxsize: req.body.maxsize,
+        maxSize: req.body.maxSize,
         datanode: req.body.datanode
 
     };
