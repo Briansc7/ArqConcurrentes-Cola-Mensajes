@@ -5,6 +5,8 @@ var ClientManager = require('./utilities/clientManager.js');
 var config = require('./config/config.json');
 const editJsonFile = require("edit-json-file");
 let file = editJsonFile('./config/config.json');
+const process = require('process');
+var orquestador_name = process.argv[2];
 
 var clientManager1 = new ClientManager(config.nodo_datos1.endpoint + config.nodo_datos1.port);
 var socket_nodo_datos1 = clientManager1.get_client_socket();
@@ -12,10 +14,19 @@ var clientManager2 = new ClientManager(config.nodo_datos2.endpoint + config.nodo
 var socket_nodo_datos2 = clientManager2.get_client_socket();
 
 var ServerManager = require('./utilities/serverManager.js');
-var serverManager = new ServerManager(config.orquestador_port);
+var serverManager = new ServerManager(getOrquestadorPort(orquestador_name));
 const io = serverManager.get_io();
 const PORT = serverManager.get_port();
-const http_port = 8080;
+var http_port;
+
+//esto es temporal, se va a delegar en el router la escucha de la creacion de cola
+if(orquestador_name == "orquestador1"){
+    http_port = 8080;
+}
+if(orquestador_name == "orquestador2"){
+    http_port = 8081;
+}
+
 const server = serverManager.get_server();
 const app_rest = serverManager.get_app_rest();
 
@@ -209,4 +220,10 @@ function getDataNodeTopicsMap(dataNodeName){
 
 function getDataNodeTopics(dataNodeName){
     return file.get(dataNodeName+".topics");
+}
+
+function getOrquestadorPort(orquestadorName){
+    return JSON.stringify(
+        file.get(orquestadorName+"_port")
+    );
 }
