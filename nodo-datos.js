@@ -109,8 +109,15 @@ function writePromise(msg) {
     return new Promise((resolve, reject) => {
         var topic = topics.get(msg.topic);
         if (topic != null) {
-            topic.queue.push(msg.details);
-            resolve(topic.mode);
+            if (topic.queue.length == topic.maxSize) {
+                console.log(topics);
+                reject("El Topic "+msg.topic+ " llego a la maxima cantidad de mensajes: "+topic.maxSize);
+            } else {
+                topic.queue.push(msg.details);
+                resolve(topic.mode);
+
+            }
+           
         } else {
 
             reject("El Topic no existe");
@@ -270,6 +277,7 @@ function initTopics() {
         topics.set(queue.topic, {
             "queue": [],
             "mode": queue.mode,
+            "maxSize": queue.maxSize,
             "subscribers": []
         });
 
