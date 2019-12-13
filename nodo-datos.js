@@ -86,7 +86,12 @@ io.on('connection', function (socket) {
             console.log("Creada cola con topic " + resp.topic+" y modo: "+resp.mode);
             console.log(topics);
 
-        }).catch((err) => {
+        }).then(() => {
+                sendMessagePromise({reason: "cola creada en nodo de datos: "+node_name}, 'RELOAD', socket);
+                console.log("Enviado pedido de recarga a orquestador por crear una cola");
+        }
+
+        ).catch((err) => {
 
 
             console.log(err);
@@ -209,7 +214,7 @@ function initTopics() {
 
     var topics = new Map();
     getDataNodeTopics(node_name).forEach(queue => {
-    //config.nodo_datos1.topics.forEach(queue => {
+
 
         topics.set(queue.topic, {
             "queue": [],
@@ -221,21 +226,9 @@ function initTopics() {
 
     });
 
-    /*config.nodo_datos2.topics.forEach(queue => {
-
-        topics.set(queue.topic, {
-            "queue": [],
-            "mode": queue.mode,
-            "subscribers": []
-        });
-
-
-    });*/
 
     console.log("NODO DE DATOS INICIADO");
     console.log(topics);
-
-
 
     return topics;
 

@@ -31,6 +31,45 @@ const server = serverManager.get_server();
 var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
+const http_port = 8080;
+const app_rest = serverManager.get_app_rest();
+
+app_rest.listen(http_port, () => {
+
+    console.log("Escuchando en el 8080 para API");
+});
+
+app_rest.post('/queue', (req, res) => {
+    //res.status(200).send({response: "API OK!" });
+    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxsize}, Nodo de datos: ${req.body.datanode}`);
+    //por el momento lo agregamos al nodo de datos 1
+    var msg = {
+        details: 'Pedido de creacion de cola',
+        topic: req.body.topic,
+        mode: req.body.mode,
+        maxsize: req.body.maxsize,
+        datanode: req.body.datanode
+
+    };
+
+    if (req.body.datanode == "nodo_datos1" || req.body.datanode == "nodo_datos2" ){
+        writePromise(msg,'CREATE-QUEUE',socket_orquestador_principal).then(() => {
+            console.log("Pedido de creacion de cola enviado al orquestador");//se podria esperar a tener una respuesta del nodo de datos para darlo por exitoso
+            res.status(200).send(req.body);
+        }).catch((err) => {
+
+            console.log(err);
+        });
+    }
+    else{
+        console.log("Nodo de datos invalido");
+        res.status(404).send({
+            error: 'Nodo de datos invalido'
+        });
+    }
+
+});
+
 //corriendo el servidor
 server.listen(PORT, () => {
 
@@ -74,14 +113,34 @@ function decidir_socket_orquestador_principal(){
     //se decide como orquestador principal el primero en conectarse
     //Luego de decidir el orquestador principal, si se conecta el otro orquestador, no se debe cambiar de orquestador
     //Solo debe haber cambio de orquestador principal cuando se cae el orquestador principal y el otro esta conectado
+    //Solamente cuando hay cambio de orquestador, es decir no cuando se elige el orq. principal la primera vez,
+    // se debe enviar pedido de recargar las variables en memoria del nuevo orquestador principal por si esta desactualizado
     if(orquestador1_conectado && (orquestador2_conectado === false)){
-        socket_orquestador_principal = socket_orquestador1;
-        console.log('Orquestador1 elegido como principal!');
+
+        if(socket_orquestador_principal !== socket_orquestador1){
+
+            if(socket_orquestador_principal != null){
+                writePromise({reason: "Cambio de orquestador principal"}, 'RELOAD', socket_orquestador1)
+            }
+
+            socket_orquestador_principal = socket_orquestador1;
+            console.log('Orquestador1 elegido como principal!');
+        }
+
     }
 
     if(orquestador2_conectado && (orquestador1_conectado === false)){
+
+        if(socket_orquestador_principal !== socket_orquestador2){
+
+            if(socket_orquestador_principal != null){
+                writePromise({reason: "Cambio de orquestador principal"}, 'RELOAD', socket_orquestador2)
+            }
+
             socket_orquestador_principal = socket_orquestador2;
             console.log('Orquestador2 elegido como principal!');
+        }
+
     }
 }
 
