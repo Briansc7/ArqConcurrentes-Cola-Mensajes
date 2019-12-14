@@ -39,16 +39,14 @@ El header debe tener la key `Content-Type` con el valor `application/json`.
 
 El body debe ser un json como el siguiente:
 
-`{
-	
+`{	
 	"topic": "Test",
 	
 	"mode": "RR",
 	
 	"maxSize": 10,
 	
-	"datanode": "nodo_datos1"
-	
+	"datanode": "nodo_datos1"	
 }`
 
 Siendo topic el nombre del tema para la cola, mode el modo de la cola que puede ser RR (round Robin) o PubSub, maxSize el limite de mensajes para la cola, y datanode el nombre del nodo de datos en donde se desea crear la cola.
