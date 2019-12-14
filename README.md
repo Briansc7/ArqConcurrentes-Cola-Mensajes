@@ -8,7 +8,7 @@ https://docs.google.com/document/d/1MhVP62zThtl572oQ4QjxKktykTekvo6cxefDcAEqDM4
 El proyecto fue desarrollado en NodeJs, por lo que para poder utilizarlo hay que instalar el entorno correspondiente. Para ello se debe seguir los pasos del siguiente tutorial:
 http://arquitecturas-concurrentes.github.io/guias/node/
 
-##Pasos para probar la aplicación:
+## Pasos para probar la aplicación:
 
 0) Si es la primera vez, clonar este repositorio y ejecutar el comando `npm install` para instalar las dependencias necesarias.
 
@@ -65,7 +65,7 @@ Para mandar el mensaje Hola al topic Alerts, el comando sería el siguiente:
 
 `node productor.js Alerts Hola`
 
-##Tolerancia a fallos del orquestador
+## Tolerancia a fallos del orquestador
 El primer orquestador en conectarse al router es elegido como orquestador principal. Toda la comunicación del router va al orquestador principal solamente. En caso de caida del orquestador principal, el otro orquestador que esta conectado pasa a ser el principal. Cuando esto ocurre, actualiza sus variables en memoria para poder empezar a atender los pedidos.
 
 Nota: la configuración de los endpoints y colas con la que se levanta cada datanode se puede encontrar en el archivo config.json.
