@@ -83,14 +83,19 @@ io.on('connection', function (socket) {
 
     socket.on('CREATE-QUEUE', (request) => {
 
-        console.log("Pedido de creacion de cola recibido, con Topic: " + request.topic+" y modo: "+ request.mode);
+        console.log("Pedido de creacion de cola recibido, con Topic: " + request.topic+", modo: "+ request.mode + " y maxzise: " + request.maxSize);
         // aca registrar al socket del Consumidor con el topic
 
-        createQueuePromise(request.topic, request.mode).then((resp) => {
+        createQueuePromise(request.topic, request.mode, request.maxSize).then((resp) => {
             console.log("Creada cola con topic " + resp.topic+" y modo: "+resp.mode);
             console.log(topics);
 
-        }).catch((err) => {
+        }).then(() => {
+                sendMessagePromise({reason: "cola creada en nodo de datos: "+node_name}, 'RELOAD', socket);
+                console.log("Enviado pedido de recarga a orquestador por crear una cola");
+        }
+
+        ).catch((err) => {
 
 
             console.log(err);
@@ -239,7 +244,7 @@ function sendMessagePromise(msg, messageId, socket) {
 
 }
 
-function createQueuePromise(topic, mode) {
+function createQueuePromise(topic, mode, maxSize) {
 
     return new Promise((resolve, reject) => {
         var topicExist = topics.get(topic);
@@ -247,11 +252,13 @@ function createQueuePromise(topic, mode) {
             topics.set(topic, {
                 "queue": [],
                 "mode": mode,
+                "maxSize": maxSize,
                 "subscribers": []
             });
             const newtopic = {
                 topic: topic,
-                mode: mode
+                mode: mode,
+                maxSize: maxSize
             };
             //ahora se edita el json en disco
             const fullTopics = file.get(node_name+".topics");//obtengo el array de topics actuales
@@ -272,7 +279,7 @@ function initTopics() {
 
     var topics = new Map();
     getDataNodeTopics(node_name).forEach(queue => {
-    //config.nodo_datos1.topics.forEach(queue => {
+
 
         topics.set(queue.topic, {
             "queue": [],
@@ -285,21 +292,9 @@ function initTopics() {
 
     });
 
-    /*config.nodo_datos2.topics.forEach(queue => {
-
-        topics.set(queue.topic, {
-            "queue": [],
-            "mode": queue.mode,
-            "subscribers": []
-        });
-
-
-    });*/
 
     console.log("NODO DE DATOS INICIADO");
     console.log(topics);
-
-
 
     return topics;
 
