@@ -107,6 +107,7 @@ io.on('connection', function (socket) {
         createQueuePromise(request.topic, request.mode, request.maxSize).then((resp) => {
             console.log("Creada cola con topic " + resp.topic+" y modo: "+resp.mode);
             showTopicsAndReplicas();
+            sendCreateQueueReplica(request);
 
         }).then(() => {
                 sendMessagePromise({reason: "cola creada en nodo de datos: "+node_name}, 'RELOAD', socket);
@@ -129,13 +130,6 @@ ioReceiveReplica.on('connection', function (socket) {
     console.log('Client ' + socket.id + ' connected!');
     console.log('Preparado para recibir replicas de las colas del nodo de datos '+getReplicaName(node_name));
 
-    socket.on('TEST', (msg) => {
-        console.log("Recibido: "+msg.test);
-        var reply = {
-            test: "respuesta de mensaje de prueba"
-        };
-        sendMessagePromise(reply, 'TEST',socket);
-    });
 
     socket.on('PRODUCTOR-REPLICA', (msg) => {
         console.log("Recibida replica, Mensaje: " + msg.details + " Topic: " + msg.topic);
@@ -150,6 +144,19 @@ ioReceiveReplica.on('connection', function (socket) {
 
     });
 
+    socket.on('CREATE-QUEUE-REPLICA', (request) => {
+        console.log("Pedido de creacion de cola en replica, con Topic: " + request.topic+", modo: "+ request.mode + " y maxzise: " + request.maxSize);
+
+        createQueueReplicaPromise(request.topic, request.mode, request.maxSize).then((resp) => {
+            console.log("Creada cola en replica con topic " + resp.topic+" y modo: "+resp.mode);
+            showTopicsAndReplicas();
+
+        }).catch((err) => {
+            console.log(err);
+        });
+
+    });
+
 
 
 });
@@ -157,16 +164,8 @@ ioReceiveReplica.on('connection', function (socket) {
 socket_send_replica.on('connect', function (socket) {
     console.log('Preparado para enviar replicas de las colas al nodo de datos '+getReplicaName(node_name));
 
-    /*var msg = {
-        test: "mensaje de prueba"
-    };
-    sendMessagePromise(msg, 'TEST',socket_send_replica);*/
-
 });
 
-socket_send_replica.on('TEST', (msg) => {
-    console.log("Recibido: "+msg.test);
-});
 
 function writePromise(msg) {
 
@@ -186,9 +185,6 @@ function writePromise(msg) {
 
             reject("El Topic no existe");
         }
-
-
-
     });
 }
 
@@ -217,7 +213,20 @@ function writeReplicaPromise(msg) {
 }
 
 function sendProductorReplica(msg){
-    sendMessagePromise(msg,'PRODUCTOR-REPLICA',socket_send_replica);
+    sendMessagePromise(msg,'PRODUCTOR-REPLICA',socket_send_replica).then(()=>{
+        console.log("Se envio replica del dato agregado en la cola");
+    }).catch((err) => {
+        console.log(err);
+    });
+
+}
+
+function sendCreateQueueReplica(msg){
+    sendMessagePromise(msg,'CREATE-QUEUE-REPLICA',socket_send_replica).then(()=>{
+        console.log("Se envio replica de la creacion de la cola");
+    }).catch((err) => {
+        console.log(err);
+    });
 }
 
 
@@ -353,6 +362,31 @@ function createQueuePromise(topic, mode, maxSize) {
             stringFullTopics = stringFullTopics + ","+JSON.stringify(newtopic)+"]"; //agrego el nuevo topic como string y agrego el } del final
             file.set(node_name+".topics",JSON.parse(stringFullTopics)); //guardo el nuevo array de topics en disco
             file.save(); //ejecuto la grabacion en disco
+            resolve(newtopic);
+        } else {
+
+            reject("El Topic ya existe existe");
+        }
+    });
+}
+
+function createQueueReplicaPromise(topic, mode, maxSize) {
+
+    return new Promise((resolve, reject) => {
+        var topicExist = topicsReplica.get(topic);
+        if (topicExist == null) {
+            topicsReplica.set(topic, {
+                "queue": [],
+                "mode": mode,
+                "maxSize": maxSize,
+                "subscribers": []
+            });
+            const newtopic = {
+                topic: topic,
+                mode: mode,
+                maxSize: maxSize
+            };
+
             resolve(newtopic);
         } else {
 
