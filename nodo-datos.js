@@ -1,6 +1,7 @@
 'use strict'
 //requiriendo dependencias 
 
+var ClientManager = require('./utilities/clientManager.js');
 var ServerManager = require('./utilities/serverManager.js');
 var config = require('./config/config.json');
 const process = require('process');
@@ -9,11 +10,20 @@ var node_name = process.argv[2];
 const editJsonFile = require("edit-json-file");
 let file = editJsonFile('./config/config.json');
 
-//var serverManager = new ServerManager(config.nodo_datos1.port);
-var serverManager = new ServerManager(getDataNodePort(node_name));
+var serverManager = new ServerManager(getDatanodePort(node_name));
 const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();
+
+var serverManagerReceiveReplica = new ServerManager(getDatanodeReceiveReplicaPort(node_name));
+const ioReceiveReplica = serverManagerReceiveReplica.get_io();
+const PORTReceiveReplica = serverManagerReceiveReplica.get_port();
+const serverReceiveReplica = serverManagerReceiveReplica.get_server();
+
+var endpoint_send_replica = getDatanodeReplicaEndpoint(node_name);
+
+var clientManagerSendReplica = new ClientManager(endpoint_send_replica);
+var socket_send_replica = clientManagerSendReplica.get_client_socket();
 
 var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
@@ -25,6 +35,10 @@ var consumerCount = 0
 //corriendo el servidor
 server.listen(PORT, () => {
     console.log(`Server running in http://localhost:${PORT}`)
+});
+
+serverReceiveReplica.listen(PORTReceiveReplica, () => {
+    console.log(`Esperando conexion del nodo de datos con cola redundante en  http://localhost:${PORTReceiveReplica}`)
 });
 
 
@@ -107,14 +121,42 @@ io.on('connection', function (socket) {
 
 });
 
+ioReceiveReplica.on('connection', function (socket) {
+    console.log('Client ' + socket.id + ' connected!');
+    console.log('Preparado para recibir replicas de las colas del nodo de datos '+getReplicaName(node_name));
 
+    socket.on('TEST', (msg) => {
+        console.log("Recibido: "+msg.test);
+        var reply = {
+            test: "respuesta de mensaje de prueba"
+        };
+        sendMessagePromise(reply, 'TEST',socket);
+    });
+
+
+
+});
+
+socket_send_replica.on('connect', function (socket) {
+    console.log('Preparado para enviar replicas de las colas al nodo de datos '+getReplicaName(node_name));
+
+    var msg = {
+        test: "mensaje de prueba"
+    };
+    sendMessagePromise(msg, 'TEST',socket_send_replica);
+
+});
+
+socket_send_replica.on('TEST', (msg) => {
+    console.log("Recibido: "+msg.test);
+});
 
 function writePromise(msg) {
 
     return new Promise((resolve, reject) => {
         var topic = topics.get(msg.topic);
         if (topic != null) {
-            if (topic.queue.length == topic.maxSize) {
+            if (topic.queue.length === topic.maxSize) {
                 console.log(topics);
                 reject("El Topic "+msg.topic+ " llego a la maxima cantidad de mensajes: "+topic.maxSize);
             } else {
@@ -213,7 +255,7 @@ function deliverMessagesRoundRobinPromise(topic) {
                 });
 
                 consumerCount++;
-                if (consumerCount == subscribers.length) {
+                if (consumerCount === subscribers.length) {
                     consumerCount = 0;
                 }
 
@@ -301,13 +343,40 @@ function initTopics() {
 
 }
 
-function getDataNodePort(dataNodeName){
-    return JSON.stringify(
-        file.get(dataNodeName+".port")
-    );
+function getDatanodePort(dataNodeName){
+
+        return file.get(dataNodeName+".port");
+
+}
+
+function getJustDatanodeEndpoint(dataNodeName){
+
+        return file.get(dataNodeName+".endpoint");
+
+}
+
+function getDatanodeReceiveReplicaPort(dataNodeName){
+
+        return file.get(dataNodeName+".port_replica");
+
 }
 
 function getDataNodeTopics(dataNodeName){
     return file.get(dataNodeName+".topics");
 }
 
+function getReplicaName(dataNodeName) {
+
+    return file.get(dataNodeName + ".nodo_replica");
+}
+
+function getDatanodeReplicaEndpoint(dataNodeName){
+    const replicaName = getReplicaName(dataNodeName);
+
+    const justReplicaEndpoint = getJustDatanodeEndpoint(replicaName);
+
+    const replicaPort = getDatanodeReceiveReplicaPort(replicaName);
+
+    return justReplicaEndpoint+replicaPort;
+
+}
