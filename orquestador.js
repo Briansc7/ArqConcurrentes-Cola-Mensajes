@@ -221,7 +221,7 @@ function initTopics() {
     });
 
     console.log("ORQUESTADOR INICIADO");
-    console.log(topics)
+    console.log(topics);
 
     return topics;
 
@@ -263,7 +263,7 @@ function initDatanodeEnpoints(){
     var endpoints = new Map();
     datanodeNames.forEach(datanodeName => {
         endpoints.set(datanodeName,
-            JSON.stringify(file.get(datanodeName+".endpoint"))+
+            file.get(datanodeName+".endpoint")+
             JSON.stringify(file.get(datanodeName+".port"))
         );
         }
