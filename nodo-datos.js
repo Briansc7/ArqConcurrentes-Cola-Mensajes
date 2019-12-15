@@ -29,8 +29,11 @@ var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
 var socket_consumer;
-var topics = initTopics();
-var consumerCount = 0
+var topics = initTopics(node_name);
+var node_name_replica = getReplicaName(node_name);
+console.log(`Topics de replica:`);
+var topicsReplica = initTopics(node_name_replica);
+var consumerCount = 0;
 
 //corriendo el servidor
 server.listen(PORT, () => {
@@ -51,7 +54,8 @@ io.on('connection', function (socket) {
         // aca escribir en Queue segun topic
         writePromise(msg).then((queueMode) => {
             console.log("Mensaje escrito en Topic " + msg.topic);
-            console.log(topics);
+            showTopicsAndReplicas();
+            sendProductorReplica(msg);//se envia la replica al otro nodo de datos
             if (queueMode == 'PubSub') {
 
                 return deliverMessagesPubSubPromise(msg.topic);
@@ -85,13 +89,13 @@ io.on('connection', function (socket) {
 
             subscribePromise(topic, socket).then((resp) => {
                 console.log("Consumidor subscripto a Topic " + topic);
-                console.log(topics);
+                showTopicsAndReplicas();
 
             }).catch((err) => {
 
 
                 console.log(err);
-            })
+            });
 
         }),
 
@@ -102,7 +106,7 @@ io.on('connection', function (socket) {
 
         createQueuePromise(request.topic, request.mode, request.maxSize).then((resp) => {
             console.log("Creada cola con topic " + resp.topic+" y modo: "+resp.mode);
-            console.log(topics);
+            showTopicsAndReplicas();
 
         }).then(() => {
                 sendMessagePromise({reason: "cola creada en nodo de datos: "+node_name}, 'RELOAD', socket);
@@ -113,7 +117,7 @@ io.on('connection', function (socket) {
 
 
             console.log(err);
-        })
+        });
 
     }));
 
@@ -133,6 +137,19 @@ ioReceiveReplica.on('connection', function (socket) {
         sendMessagePromise(reply, 'TEST',socket);
     });
 
+    socket.on('PRODUCTOR-REPLICA', (msg) => {
+        console.log("Recibida replica, Mensaje: " + msg.details + " Topic: " + msg.topic);
+
+        writeReplicaPromise(msg).then(() => {
+            console.log("Mensaje de replica escrito en Topic " + msg.topic);
+            showTopicsAndReplicas();
+        }).catch((err) => {
+
+            console.log(err);
+        });
+
+    });
+
 
 
 });
@@ -140,10 +157,10 @@ ioReceiveReplica.on('connection', function (socket) {
 socket_send_replica.on('connect', function (socket) {
     console.log('Preparado para enviar replicas de las colas al nodo de datos '+getReplicaName(node_name));
 
-    var msg = {
+    /*var msg = {
         test: "mensaje de prueba"
     };
-    sendMessagePromise(msg, 'TEST',socket_send_replica);
+    sendMessagePromise(msg, 'TEST',socket_send_replica);*/
 
 });
 
@@ -173,6 +190,34 @@ function writePromise(msg) {
 
 
     });
+}
+
+function writeReplicaPromise(msg) {
+
+    return new Promise((resolve, reject) => {
+        var topic = topicsReplica.get(msg.topic);
+        if (topic != null) {
+            if (topic.queue.length === topic.maxSize) {
+                console.log(topicsReplica);
+                reject("El Topic "+msg.topic+ " llego a la maxima cantidad de mensajes: "+topic.maxSize);
+            } else {
+                topic.queue.push(msg.details);
+                resolve(topic.mode);
+
+            }
+
+        } else {
+
+            reject("El Topic no existe");
+        }
+
+
+
+    });
+}
+
+function sendProductorReplica(msg){
+    sendMessagePromise(msg,'PRODUCTOR-REPLICA',socket_send_replica);
 }
 
 
@@ -317,10 +362,10 @@ function createQueuePromise(topic, mode, maxSize) {
 }
 
 
-function initTopics() {
+function initTopics(nodeName) {
 
     var topics = new Map();
-    getDataNodeTopics(node_name).forEach(queue => {
+    getDataNodeTopics(nodeName).forEach(queue => {
 
 
         topics.set(queue.topic, {
@@ -335,13 +380,14 @@ function initTopics() {
     });
 
 
-    console.log("NODO DE DATOS INICIADO");
+    console.log("Topics de "+ nodeName);
     console.log(topics);
 
     return topics;
 
 
 }
+
 
 function getDatanodePort(dataNodeName){
 
@@ -379,4 +425,11 @@ function getDatanodeReplicaEndpoint(dataNodeName){
 
     return justReplicaEndpoint+replicaPort;
 
+}
+
+function showTopicsAndReplicas(){
+    console.log("Colas Propias:");
+    console.log(topics);
+    console.log("Colas replicadas de "+node_name_replica+":");
+    console.log(topicsReplica);
 }
