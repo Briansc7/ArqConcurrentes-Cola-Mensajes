@@ -21,6 +21,7 @@ const PORTReceiveReplica = serverManagerReceiveReplica.get_port();
 const serverReceiveReplica = serverManagerReceiveReplica.get_server();
 
 var endpoint_send_replica = getDatanodeReplicaEndpoint(node_name);
+var nodo_replica_conectado = null;
 
 var clientManagerSendReplica = new ClientManager(endpoint_send_replica);
 var socket_send_replica = clientManagerSendReplica.get_client_socket();
@@ -157,12 +158,51 @@ ioReceiveReplica.on('connection', function (socket) {
 
     });
 
+    socket.on('DISASTER-RECOVER', (msg) => {
+        console.log("Recuperacion ante desastres: Se recibieron colas y replicas para recargarlas en memoria");
+
+        DisasterRecoverPromise(msg.topics, msg.topicsReplica).then((resp) => {
+            console.log("Se recargaron en memoria las colas y las replicas ");
+            showTopicsAndReplicas();
+
+        }).catch((err) => {
+            console.log(err);
+        });
+
+    });
+
 
 
 });
 
 socket_send_replica.on('connect', function (socket) {
-    console.log('Preparado para enviar replicas de las colas al nodo de datos '+getReplicaName(node_name));
+    console.log('Nodo de datos para enviar replicas conectado: '+getReplicaName(node_name));
+
+    if(nodo_replica_conectado === null){
+        nodo_replica_conectado = true;
+    }
+    else{
+        //el nodo de datos de replica se acaba de reconectar, asi que hay que sincronizar tanto sus colas propias como las colas de replica
+        //los topics de replica son los topics propios del otro nodo, y los topics propios son los que el otro tiene que almacenar como replica
+
+
+        //los maps no se pueden encodear como json, por eso se lo transforma a array
+        var topicsAEnviar = JSON.stringify(Array.from(topicsReplica));
+        var topicsReplicaAEnviar = JSON.stringify(Array.from(topics));
+
+        var msg = {
+            topics: topicsAEnviar,
+            topicsReplica: topicsReplicaAEnviar
+        };
+
+        sendTopicsAndReplica(msg);
+    }
+
+});
+
+socket_send_replica.on('disconnect', function (socket) {
+    console.log('Nodo de datos para enviar replicas desconectado: '+getReplicaName(node_name));
+    nodo_replica_conectado = false;
 
 });
 
@@ -212,6 +252,17 @@ function writeReplicaPromise(msg) {
     });
 }
 
+function DisasterRecoverPromise(topicsReceived, topicsReplicaReceved) {
+
+    return new Promise((resolve, reject) => {
+                //Ya que no se puede encondear en json los maps, se los transformo en array y ahora hay que volver a transformarlo a map
+                topics = new Map(JSON.parse(topicsReceived));
+                topicsReplica = new Map(JSON.parse(topicsReplicaReceved));
+                resolve("Success");
+
+    });
+}
+
 function sendProductorReplica(msg){
     sendMessagePromise(msg,'PRODUCTOR-REPLICA',socket_send_replica).then(()=>{
         console.log("Se envio replica del dato agregado en la cola");
@@ -224,6 +275,14 @@ function sendProductorReplica(msg){
 function sendCreateQueueReplica(msg){
     sendMessagePromise(msg,'CREATE-QUEUE-REPLICA',socket_send_replica).then(()=>{
         console.log("Se envio replica de la creacion de la cola");
+    }).catch((err) => {
+        console.log(err);
+    });
+}
+
+function sendTopicsAndReplica(msg){
+    sendMessagePromise(msg,'DISASTER-RECOVER',socket_send_replica).then(()=>{
+        console.log("Se envio topics y replica para que el otro nodo de datos se recupere");
     }).catch((err) => {
         console.log(err);
     });
