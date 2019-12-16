@@ -31,12 +31,12 @@ const server = serverManager.get_server();
 var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
-const http_port = 8080;
+const http_port = config.router_create_queue_port;
 const app_rest = serverManager.get_app_rest();
 
 app_rest.listen(http_port, () => {
 
-    console.log("Escuchando en el 8080 para API");
+    console.log("Escuchando en el puerto "+ http_port + " para la API de creacion de colas");
 });
 
 app_rest.post('/queue', (req, res) => {
@@ -52,7 +52,7 @@ app_rest.post('/queue', (req, res) => {
 
     };
 
-    if (req.body.datanode == "nodo_datos1" || req.body.datanode == "nodo_datos2" ){
+    if (req.body.datanode === "nodo_datos1" || req.body.datanode === "nodo_datos2" ){
         writePromise(msg,'CREATE-QUEUE',socket_orquestador_principal).then(() => {
             console.log("Pedido de creacion de cola enviado al orquestador");//se podria esperar a tener una respuesta del nodo de datos para darlo por exitoso
             res.status(200).send(req.body);
@@ -73,7 +73,7 @@ app_rest.post('/queue', (req, res) => {
 //corriendo el servidor
 server.listen(PORT, () => {
 
-    console.log(`Server running in http://localhost:${PORT}`)
+    console.log(`Servidor del router escuchando en el puerto ${PORT}`)
 });
 
 // Add a connect listener
