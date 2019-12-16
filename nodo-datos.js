@@ -111,6 +111,16 @@ io.on('connection', function (socket) {
 
         }),
 
+        socket.on('disconnect', function () {
+            //puede ser que el cliente desconectado sea un consumidor suscripto.
+            // Si es asi, hay que quitarlo de la lista de subscribers
+
+            console.log('Cliente: '+socket.id +" desconectado");
+
+            eliminarSiEsSubscriber(socket);
+
+        }),
+
     socket.on('CREATE-QUEUE', (request) => {
 
         console.log("Pedido de creacion de cola recibido, con Topic: " + request.topic+", modo: "+ request.mode + " y maxzise: " + request.maxSize);
@@ -600,3 +610,15 @@ function getDatanodeTopicsFromConfig(datanodeName){
     //obtiene los topics de un datanode de disco
     return file.get(datanodeName+".topics");
 }
+
+function eliminarSiEsSubscriber(socket){
+
+    topics.forEach((topic)=>{
+        if(topic.subscribers.includes(socket)){
+            topic.subscribers.splice( topic.subscribers.indexOf(socket), 1 );
+            console.log("El cliente desconectado era un subscriptor, se lo quito de la lista de subscriptores");
+            showTopicsAndReplicas();
+        }
+    });
+}
+
