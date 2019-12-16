@@ -75,6 +75,10 @@ Ambos nodos de datos se comunican entre sí. Cuando un nodo recibe un dato en un
 
 Cuando un nodo de datos se cae, el otro nodo detecta su caída y también detecta cuando se vuelve a reconectar. Cuando el nodo de datos caído se reconecta, recibe una solicitud de ejecutar la recuperación ante desastres en la cual recibe los datos actualizados de sus colas propias y también la réplica de las colas del otro nodo de datos. Con lo cual, el nodo de datos actualiza su estado y queda listo para seguir funcionando como antes.
 
+En caso de que existan consumidores suscriptos al nodo caído, cuando el nodo de datos se vuelve a levantar, los consumidores se vuelven a suscribir. En la recuperación de los datos, sólo se recuperan los datos de las colas y no los suscriptores por ser sus sockets inválidos por la caída. Es por ello que los consumidores se vuelven a suscribir automáticamente. 
+
+En el caso en que el que se caiga sea el consumidor y no el nodo de datos, se lo quita de la lista de suscriptores del tópic correspondiente para ya no seguir intentando mandarle mensajes a un socket inválido.
+
 
 
 Nota: la configuración de los endpoints de todos los componentes y las colas con las que se levanta cada datanode (excepto los datos guardados en las colas) se puede encontrar en el archivo config.json.

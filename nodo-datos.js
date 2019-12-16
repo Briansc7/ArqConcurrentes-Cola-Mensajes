@@ -111,6 +111,16 @@ io.on('connection', function (socket) {
 
         }),
 
+        socket.on('disconnect', function () {
+            //puede ser que el cliente desconectado sea un consumidor suscripto.
+            // Si es asi, hay que quitarlo de la lista de subscribers
+
+            console.log('Cliente: '+socket.id +" desconectado");
+
+            eliminarSiEsSubscriber(socket);
+
+        }),
+
     socket.on('CREATE-QUEUE', (request) => {
 
         console.log("Pedido de creacion de cola recibido, con Topic: " + request.topic+", modo: "+ request.mode + " y maxzise: " + request.maxSize);
@@ -280,8 +290,26 @@ function DisasterRecoverPromise(topicsReceived, topicsReplicaReceved) {
 
     return new Promise((resolve, reject) => {
                 //Ya que no se puede encondear en json los maps, se los transformo en array y ahora hay que volver a transformarlo a map
-                topics = new Map(JSON.parse(topicsReceived));
+                var topicsReceivedMap = new Map(JSON.parse(topicsReceived));
+
+                //Solamente se actualizan los datos de las colas para no borrar los consumidores que se volvieron a suscribir
+                var topicsNames = [];
+        getDatanodeTopicsFromConfig(node_name).forEach(topic => {
+            topicsNames.push(topic.topic);
+        });
+
+        topicsNames.forEach((topicName)=>{
+                    topics.get(topicName).queue = topicsReceivedMap.get(topicName).queue;
+                });
+
+
                 topicsReplica = new Map(JSON.parse(topicsReplicaReceved));
+
+                //se borran los subscribers recibidos porque al enviarlos en recuperacion de fallos, van a ser invalidos.
+                topicsReplica.forEach((topic)=>{
+                    topic.subscribers = [];
+                });
+
                 resolve("Success");
 
     });
@@ -362,6 +390,7 @@ function deliverMessagesPubSubPromise(topic) {
 
                     sendMessagePromise(msg, "QUEUE_MESSAGE", sub).then(resp => {
                         console.log("Mensaje enviado en modo PubSub a Consumidor!");
+                        showTopicsAndReplicas();
 
 
 
@@ -409,6 +438,7 @@ function deliverMessagesRoundRobinPromise(topic) {
 
                 sendMessagePromise(msg, "QUEUE_MESSAGE", sub).then(resp => {
                     console.log("Mensaje enviado en modo Round Robin a Consumidor!");
+                    showTopicsAndReplicas();
 
                 });
 
@@ -575,3 +605,20 @@ function showTopicsAndReplicas(){
     console.log("Colas replicadas de "+node_name_replica+":");
     console.log(topicsReplica);
 }
+
+function getDatanodeTopicsFromConfig(datanodeName){
+    //obtiene los topics de un datanode de disco
+    return file.get(datanodeName+".topics");
+}
+
+function eliminarSiEsSubscriber(socket){
+
+    topics.forEach((topic)=>{
+        if(topic.subscribers.includes(socket)){
+            topic.subscribers.splice( topic.subscribers.indexOf(socket), 1 );
+            console.log("El cliente desconectado era un subscriptor, se lo quito de la lista de subscriptores");
+            showTopicsAndReplicas();
+        }
+    });
+}
+
