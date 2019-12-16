@@ -88,9 +88,20 @@ io.on('connection', function (socket) {
             console.log("Topic: " + topic);
             // aca registrar al socket del Consumidor con el topic
 
-            subscribePromise(topic, socket).then((resp) => {
+            subscribePromise(topic, socket).then((queueMode) => {
                 console.log("Consumidor subscripto a Topic " + topic);
                 showTopicsAndReplicas();
+                if (queueMode == 'PubSub') {
+
+                    return deliverMessagesPubSubPromise(topic);
+                } else if (queueMode == 'RR') {
+    
+                    return deliverMessagesRoundRobinPromise(topic);
+                } else {
+    
+                    console.log("Modo de trabajo de cola incorrecto");
+                }
+
 
             }).catch((err) => {
 
@@ -326,7 +337,7 @@ function subscribePromise(topic, consumer_socket) {
         var subs = topics.get(topic).subscribers;
         if (subs != null) {
             subs.push(consumer_socket);
-            resolve("Done");
+            resolve(topics.get(topic).mode);
         } else {
 
             reject("El Topic no existe");
