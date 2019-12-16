@@ -1,6 +1,7 @@
 'use strict'
 //requiriendo dependencias 
 
+var ClientManager = require('./utilities/clientManager.js');
 var ServerManager = require('./utilities/serverManager.js');
 var config = require('./config/config.json');
 const process = require('process');
@@ -9,22 +10,39 @@ var node_name = process.argv[2];
 const editJsonFile = require("edit-json-file");
 let file = editJsonFile('./config/config.json');
 
-//var serverManager = new ServerManager(config.nodo_datos1.port);
-var serverManager = new ServerManager(getDataNodePort(node_name));
+var serverManager = new ServerManager(getDatanodePort(node_name));
 const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();
+
+var serverManagerReceiveReplica = new ServerManager(getDatanodeReceiveReplicaPort(node_name));
+const ioReceiveReplica = serverManagerReceiveReplica.get_io();
+const PORTReceiveReplica = serverManagerReceiveReplica.get_port();
+const serverReceiveReplica = serverManagerReceiveReplica.get_server();
+
+var endpoint_send_replica = getDatanodeReplicaEndpoint(node_name);
+var nodo_replica_conectado = null;
+
+var clientManagerSendReplica = new ClientManager(endpoint_send_replica);
+var socket_send_replica = clientManagerSendReplica.get_client_socket();
 
 var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
 var socket_consumer;
-var topics = initTopics();
-var consumerCount = 0
+var topics = initTopics(node_name);
+var node_name_replica = getReplicaName(node_name);
+console.log(`Topics de replica:`);
+var topicsReplica = initTopics(node_name_replica);
+var consumerCount = 0;
 
 //corriendo el servidor
 server.listen(PORT, () => {
     console.log(`Server running in http://localhost:${PORT}`)
+});
+
+serverReceiveReplica.listen(PORTReceiveReplica, () => {
+    console.log(`Esperando conexion del nodo de datos con cola redundante en  http://localhost:${PORTReceiveReplica}`)
 });
 
 
@@ -37,7 +55,8 @@ io.on('connection', function (socket) {
         // aca escribir en Queue segun topic
         writePromise(msg).then((queueMode) => {
             console.log("Mensaje escrito en Topic " + msg.topic);
-            console.log(topics);
+            showTopicsAndReplicas();
+            sendProductorReplica(msg);//se envia la replica al otro nodo de datos
             if (queueMode == 'PubSub') {
 
                 return deliverMessagesPubSubPromise(msg.topic);
@@ -71,13 +90,13 @@ io.on('connection', function (socket) {
 
             subscribePromise(topic, socket).then((resp) => {
                 console.log("Consumidor subscripto a Topic " + topic);
-                console.log(topics);
+                showTopicsAndReplicas();
 
             }).catch((err) => {
 
 
                 console.log(err);
-            })
+            });
 
         }),
 
@@ -88,7 +107,8 @@ io.on('connection', function (socket) {
 
         createQueuePromise(request.topic, request.mode, request.maxSize).then((resp) => {
             console.log("Creada cola con topic " + resp.topic+" y modo: "+resp.mode);
-            console.log(topics);
+            showTopicsAndReplicas();
+            sendCreateQueueReplica(request);
 
         }).then(() => {
                 sendMessagePromise({reason: "cola creada en nodo de datos: "+node_name}, 'RELOAD', socket);
@@ -99,7 +119,7 @@ io.on('connection', function (socket) {
 
 
             console.log(err);
-        })
+        });
 
     }));
 
@@ -107,6 +127,97 @@ io.on('connection', function (socket) {
 
 });
 
+ioReceiveReplica.on('connection', function (socket) {
+    console.log('Client ' + socket.id + ' connected!');
+    console.log('Preparado para recibir replicas de las colas del nodo de datos '+getReplicaName(node_name));
+
+
+    socket.on('PRODUCTOR-REPLICA', (msg) => {
+        console.log("Recibida replica, Mensaje: " + msg.details + " Topic: " + msg.topic);
+
+        writeReplicaPromise(msg).then(() => {
+            console.log("Mensaje de replica escrito en Topic " + msg.topic);
+            showTopicsAndReplicas();
+        }).catch((err) => {
+
+            console.log(err);
+        });
+
+    });
+
+    socket.on('CREATE-QUEUE-REPLICA', (request) => {
+        console.log("Pedido de creacion de cola en replica, con Topic: " + request.topic+", modo: "+ request.mode + " y maxzise: " + request.maxSize);
+
+        createQueueReplicaPromise(request.topic, request.mode, request.maxSize).then((resp) => {
+            console.log("Creada cola en replica con topic " + resp.topic+" y modo: "+resp.mode);
+            showTopicsAndReplicas();
+
+        }).catch((err) => {
+            console.log(err);
+        });
+
+    });
+
+    socket.on('DISASTER-RECOVER', (msg) => {
+        console.log("Recuperacion ante desastres: Se recibieron colas y replicas para recargarlas en memoria");
+
+        DisasterRecoverPromise(msg.topics, msg.topicsReplica).then((resp) => {
+            console.log("Se recargaron en memoria las colas y las replicas ");
+            showTopicsAndReplicas();
+
+        }).catch((err) => {
+            console.log(err);
+        });
+
+    });
+
+    socket.on('EMPTY-QUEUE', (msg) => {
+        console.log("Recuperacion ante desastres: Se recibieron colas y replicas para recargarlas en memoria");
+
+        ClearQueueReplicaPromise(msg.topic).then((resp) => {
+            console.log("Se vacio la replica de la cola "+msg.topic+" por haber sido consumida en su totalidad");
+            showTopicsAndReplicas();
+
+        }).catch((err) => {
+            console.log(err);
+        });
+
+    });
+
+
+
+});
+
+socket_send_replica.on('connect', function (socket) {
+    console.log('Nodo de datos para enviar replicas conectado: '+getReplicaName(node_name));
+
+    if(nodo_replica_conectado === null){
+        nodo_replica_conectado = true;
+    }
+    else{
+        //el nodo de datos de replica se acaba de reconectar, asi que hay que sincronizar tanto sus colas propias como las colas de replica
+        //los topics de replica son los topics propios del otro nodo, y los topics propios son los que el otro tiene que almacenar como replica
+
+
+        //los maps no se pueden encodear como json, por eso se lo transforma a array
+        var topicsAEnviar = JSON.stringify(Array.from(topicsReplica));
+        var topicsReplicaAEnviar = JSON.stringify(Array.from(topics));
+
+        var msg = {
+            topics: topicsAEnviar,
+            topicsReplica: topicsReplicaAEnviar
+        };
+
+        sendTopicsAndReplica(msg);
+    }
+
+});
+
+socket_send_replica.on('disconnect', function (socket) {
+    console.log('Nodo de datos para enviar replicas desconectado: '+getReplicaName(node_name));
+    nodo_replica_conectado = false;
+
+});
 
 
 function writePromise(msg) {
@@ -114,7 +225,7 @@ function writePromise(msg) {
     return new Promise((resolve, reject) => {
         var topic = topics.get(msg.topic);
         if (topic != null) {
-            if (topic.queue.length == topic.maxSize) {
+            if (topic.queue.length === topic.maxSize) {
                 console.log(topics);
                 reject("El Topic "+msg.topic+ " llego a la maxima cantidad de mensajes: "+topic.maxSize);
             } else {
@@ -127,9 +238,84 @@ function writePromise(msg) {
 
             reject("El Topic no existe");
         }
+    });
+}
+
+function writeReplicaPromise(msg) {
+
+    return new Promise((resolve, reject) => {
+        var topic = topicsReplica.get(msg.topic);
+        if (topic != null) {
+            if (topic.queue.length === topic.maxSize) {
+                console.log(topicsReplica);
+                reject("El Topic "+msg.topic+ " llego a la maxima cantidad de mensajes: "+topic.maxSize);
+            } else {
+                topic.queue.push(msg.details);
+                resolve(topic.mode);
+
+            }
+
+        } else {
+
+            reject("El Topic no existe");
+        }
 
 
 
+    });
+}
+
+function DisasterRecoverPromise(topicsReceived, topicsReplicaReceved) {
+
+    return new Promise((resolve, reject) => {
+                //Ya que no se puede encondear en json los maps, se los transformo en array y ahora hay que volver a transformarlo a map
+                topics = new Map(JSON.parse(topicsReceived));
+                topicsReplica = new Map(JSON.parse(topicsReplicaReceved));
+                resolve("Success");
+
+    });
+}
+
+function ClearQueueReplicaPromise(topic) {
+
+    return new Promise((resolve, reject) => {
+        topicsReplica.get(topic).queue = [];
+        resolve("Success");
+
+    });
+}
+
+function sendProductorReplica(msg){
+    sendMessagePromise(msg,'PRODUCTOR-REPLICA',socket_send_replica).then(()=>{
+        console.log("Se envio replica del dato agregado en la cola");
+    }).catch((err) => {
+        console.log(err);
+    });
+
+}
+
+function sendCreateQueueReplica(msg){
+    sendMessagePromise(msg,'CREATE-QUEUE-REPLICA',socket_send_replica).then(()=>{
+        console.log("Se envio replica de la creacion de la cola");
+    }).catch((err) => {
+        console.log(err);
+    });
+}
+
+function sendTopicsAndReplica(msg){
+    sendMessagePromise(msg,'DISASTER-RECOVER',socket_send_replica).then(()=>{
+        console.log("Se envio topics y replica para que el otro nodo de datos se recupere");
+    }).catch((err) => {
+        console.log(err);
+    });
+}
+
+function replicarColaVacia(topic){
+    const msg = {topic: topic};
+    sendMessagePromise(msg,'EMPTY-QUEUE',socket_send_replica).then(()=>{
+        console.log("Se envio topic, que tiene ahora vacia la cola, a la replica");
+    }).catch((err) => {
+        console.log(err);
     });
 }
 
@@ -176,6 +362,9 @@ function deliverMessagesPubSubPromise(topic) {
             });
 
         topics.get(topic).queue = []; // borro mensajes una vez que se enviaron todos, siempre y cuando haya consumidores subscriptos, sino no hace nada
+
+        replicarColaVacia(topic);
+
         resolve();
         } else {
 
@@ -213,13 +402,15 @@ function deliverMessagesRoundRobinPromise(topic) {
                 });
 
                 consumerCount++;
-                if (consumerCount == subscribers.length) {
+                if (consumerCount === subscribers.length) {
                     consumerCount = 0;
                 }
 
              });
 
             topics.get(topic).queue = [];
+
+            replicarColaVacia(topic);
 
         resolve();
 
@@ -231,6 +422,8 @@ function deliverMessagesRoundRobinPromise(topic) {
 });
 
 }
+
+
 
 function sendMessagePromise(msg, messageId, socket) {
 
@@ -274,11 +467,36 @@ function createQueuePromise(topic, mode, maxSize) {
     });
 }
 
+function createQueueReplicaPromise(topic, mode, maxSize) {
 
-function initTopics() {
+    return new Promise((resolve, reject) => {
+        var topicExist = topicsReplica.get(topic);
+        if (topicExist == null) {
+            topicsReplica.set(topic, {
+                "queue": [],
+                "mode": mode,
+                "maxSize": maxSize,
+                "subscribers": []
+            });
+            const newtopic = {
+                topic: topic,
+                mode: mode,
+                maxSize: maxSize
+            };
+
+            resolve(newtopic);
+        } else {
+
+            reject("El Topic ya existe existe");
+        }
+    });
+}
+
+
+function initTopics(nodeName) {
 
     var topics = new Map();
-    getDataNodeTopics(node_name).forEach(queue => {
+    getDataNodeTopics(nodeName).forEach(queue => {
 
 
         topics.set(queue.topic, {
@@ -293,7 +511,7 @@ function initTopics() {
     });
 
 
-    console.log("NODO DE DATOS INICIADO");
+    console.log("Topics de "+ nodeName);
     console.log(topics);
 
     return topics;
@@ -301,13 +519,48 @@ function initTopics() {
 
 }
 
-function getDataNodePort(dataNodeName){
-    return JSON.stringify(
-        file.get(dataNodeName+".port")
-    );
+
+function getDatanodePort(dataNodeName){
+
+        return file.get(dataNodeName+".port");
+
+}
+
+function getJustDatanodeEndpoint(dataNodeName){
+
+        return file.get(dataNodeName+".endpoint");
+
+}
+
+function getDatanodeReceiveReplicaPort(dataNodeName){
+
+        return file.get(dataNodeName+".port_replica");
+
 }
 
 function getDataNodeTopics(dataNodeName){
     return file.get(dataNodeName+".topics");
 }
 
+function getReplicaName(dataNodeName) {
+
+    return file.get(dataNodeName + ".nodo_replica");
+}
+
+function getDatanodeReplicaEndpoint(dataNodeName){
+    const replicaName = getReplicaName(dataNodeName);
+
+    const justReplicaEndpoint = getJustDatanodeEndpoint(replicaName);
+
+    const replicaPort = getDatanodeReceiveReplicaPort(replicaName);
+
+    return justReplicaEndpoint+replicaPort;
+
+}
+
+function showTopicsAndReplicas(){
+    console.log("Colas Propias:");
+    console.log(topics);
+    console.log("Colas replicadas de "+node_name_replica+":");
+    console.log(topicsReplica);
+}

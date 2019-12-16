@@ -68,7 +68,16 @@ Para mandar el mensaje Hola al topic Alerts, el comando sería el siguiente:
 ## Tolerancia a fallos del orquestador
 El primer orquestador en conectarse al router es elegido como orquestador principal. Toda la comunicación del router va al orquestador principal solamente. En caso de caida del orquestador principal, el otro orquestador que esta conectado pasa a ser el principal. Cuando esto ocurre, actualiza sus variables en memoria para poder empezar a atender los pedidos.
 
-Nota: la configuración de los endpoints y colas con la que se levanta cada datanode se puede encontrar en el archivo config.json.
+## Tolerancia a fallos de los nodos de datos
+Los nodos de datos tienen en memoria sus colas y también una copia de las colas del otro nodo de datos.
+
+Ambos nodos de datos se comunican entre sí. Cuando un nodo recibe un dato en una cola, recibe la creación de una nueva cola o se consumen los datos de una de sus colas, replica esta actualización a la copia en memoria que tiene el otro nodo de datos. 
+
+Cuando un nodo de datos se cae, el otro nodo detecta su caída y también detecta cuando se vuelve a reconectar. Cuando el nodo de datos caído se reconecta, recibe una solicitud de ejecutar la recuperación ante desastres en la cual recibe los datos actualizados de sus colas propias y también la réplica de las colas del otro nodo de datos. Con lo cual, el nodo de datos actualiza su estado y queda listo para seguir funcionando como antes.
+
+
+
+Nota: la configuración de los endpoints de todos los componentes y las colas con las que se levanta cada datanode (excepto los datos guardados en las colas) se puede encontrar en el archivo config.json.
 
 
 

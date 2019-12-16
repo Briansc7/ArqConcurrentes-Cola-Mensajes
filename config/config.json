@@ -5,11 +5,11 @@
   "orquestador1_endpoint": "http://localhost:",
   "orquestador2_port": 3002,
   "orquestador2_endpoint": "http://localhost:",
-  "nodo_datos_port": 3003,
-  "nodo_datos_endpoint": "http://localhost:",
   "nodo_datos1": {
     "endpoint": "http://localhost:",
-    "port": 3004,
+    "port": 3003,
+    "port_replica": 3004,
+    "nodo_replica": "nodo_datos2",
     "topics": [
       {
         "topic": "Alerts",
@@ -26,6 +26,8 @@
   "nodo_datos2": {
     "endpoint": "http://localhost:",
     "port": 3005,
+    "port_replica": 3006,
+    "nodo_replica": "nodo_datos1",
     "topics": [
       {
         "topic": "Warnings",
