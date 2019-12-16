@@ -171,6 +171,19 @@ ioReceiveReplica.on('connection', function (socket) {
 
     });
 
+    socket.on('EMPTY-QUEUE', (msg) => {
+        console.log("Recuperacion ante desastres: Se recibieron colas y replicas para recargarlas en memoria");
+
+        ClearQueueReplicaPromise(msg.topic).then((resp) => {
+            console.log("Se vacio la replica de la cola "+msg.topic+" por haber sido consumida en su totalidad");
+            showTopicsAndReplicas();
+
+        }).catch((err) => {
+            console.log(err);
+        });
+
+    });
+
 
 
 });
@@ -263,6 +276,15 @@ function DisasterRecoverPromise(topicsReceived, topicsReplicaReceved) {
     });
 }
 
+function ClearQueueReplicaPromise(topic) {
+
+    return new Promise((resolve, reject) => {
+        topicsReplica.get(topic).queue = [];
+        resolve("Success");
+
+    });
+}
+
 function sendProductorReplica(msg){
     sendMessagePromise(msg,'PRODUCTOR-REPLICA',socket_send_replica).then(()=>{
         console.log("Se envio replica del dato agregado en la cola");
@@ -283,6 +305,15 @@ function sendCreateQueueReplica(msg){
 function sendTopicsAndReplica(msg){
     sendMessagePromise(msg,'DISASTER-RECOVER',socket_send_replica).then(()=>{
         console.log("Se envio topics y replica para que el otro nodo de datos se recupere");
+    }).catch((err) => {
+        console.log(err);
+    });
+}
+
+function replicarColaVacia(topic){
+    const msg = {topic: topic};
+    sendMessagePromise(msg,'EMPTY-QUEUE',socket_send_replica).then(()=>{
+        console.log("Se envio topic, que tiene ahora vacia la cola, a la replica");
     }).catch((err) => {
         console.log(err);
     });
@@ -331,6 +362,9 @@ function deliverMessagesPubSubPromise(topic) {
             });
 
         topics.get(topic).queue = []; // borro mensajes una vez que se enviaron todos, siempre y cuando haya consumidores subscriptos, sino no hace nada
+
+        replicarColaVacia(topic);
+
         resolve();
         } else {
 
@@ -376,6 +410,8 @@ function deliverMessagesRoundRobinPromise(topic) {
 
             topics.get(topic).queue = [];
 
+            replicarColaVacia(topic);
+
         resolve();
 
         } else {
@@ -386,6 +422,8 @@ function deliverMessagesRoundRobinPromise(topic) {
 });
 
 }
+
+
 
 function sendMessagePromise(msg, messageId, socket) {
 
