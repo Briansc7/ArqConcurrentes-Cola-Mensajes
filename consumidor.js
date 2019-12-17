@@ -57,7 +57,15 @@ socket_router.on('ENDPOINT', function (endpoint) {
           socket_nodo_datos.on('QUEUE_MESSAGE', function (msg) {
                 console.log('Mensaje recibido de Nodo de datos!');
                 console.log("Mensaje: "+msg);
-               // console.log("Message: " + msg.details + " Topic: " + msg.topic);
+                  var ackMessage = {
+
+                    topic: topicASubscribir,
+                    message: msg
+                }
+                sendACKPromise(ackMessage).then(() => {
+                   console.log("Se envio ACK a Nodo!");
+
+                })
                        
         
                 
@@ -81,6 +89,20 @@ function subscribeToRouterPromise(topicASubscribir, messageId, socket_router) {
     return new Promise((resolve, reject) => {
 
         msgSender.send(topicASubscribir, messageId, socket_router);
+        resolve("Done");
+
+
+    });
+
+
+}
+
+
+function sendACKPromise(msg) {
+
+    return new Promise((resolve, reject) => {
+
+        msgSender.send(msg, 'CONSUMER-ACK', socket_nodo_datos);
         resolve("Done");
 
 

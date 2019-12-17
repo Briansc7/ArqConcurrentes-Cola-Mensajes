@@ -23,12 +23,14 @@
       {
         "topic": "Alerts",
         "mode": "PubSub",
-        "maxSize": 10
+        "maxSize": 10,
+        "transactional": true
       },
       {
         "topic": "Errors",
         "mode": "RR",
-        "maxSize": 8
+        "maxSize": 8,
+        "transactional": false
       }
     ]
   },
@@ -41,12 +43,14 @@
       {
         "topic": "Warnings",
         "mode": "PubSub",
-        "maxSize": 10
+        "maxSize": 10,
+        "transactional": true
       },
       {
         "topic": "Details",
         "mode": "RR",
-        "maxSize": 10
+        "maxSize": 10,
+        "transactional": false
       }
     ]
   }
