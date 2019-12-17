@@ -63,32 +63,24 @@ serverFailover.listen(PORTFailover, () => {
 
 app_rest.post('/queue', (req, res) => {
     //res.status(200).send({response: "API OK!" });
-    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxSize}, Nodo de datos: ${req.body.datanode}`);
+    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxSize}`);
     //por el momento lo agregamos al nodo de datos 1
     var msg = {
         details: 'Pedido de creacion de cola',
         topic: req.body.topic,
         mode: req.body.mode,
-        maxSize: req.body.maxSize,
-        datanode: req.body.datanode
+        maxSize: req.body.maxSize
 
     };
 
-    if (req.body.datanode === "nodo_datos1" || req.body.datanode === "nodo_datos2" ){
+
         writePromise(msg,'CREATE-QUEUE',socket_orquestador_principal).then(() => {
             console.log("Pedido de creacion de cola enviado al orquestador");//se podria esperar a tener una respuesta del nodo de datos para darlo por exitoso
             res.status(200).send(req.body);
         }).catch((err) => {
-
             console.log(err);
         });
-    }
-    else{
-        console.log("Nodo de datos invalido");
-        res.status(404).send({
-            error: 'Nodo de datos invalido'
-        });
-    }
+
 
 });
 
