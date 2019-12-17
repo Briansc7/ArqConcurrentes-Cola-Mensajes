@@ -23,7 +23,7 @@ const server = serverManager.get_server();
 
 //corriendo el servidor
 server.listen(PORT, () => {
-    console.log(`Server running in http://localhost:${PORT}`)
+    console.log(`Servidor corriendo en http://localhost:${PORT}`)
 });
 
 
@@ -41,7 +41,7 @@ reloadConfigToMemory();
 
 
 io.on('connection', function (socket) {
-    console.log('Client ' + socket.id + ' connected!');
+    console.log('Cliente ' + socket.id + ' conectado!');
 
     socket.on('PRODUCER-from-router', function (msg) {
         console.log('Productor conectado desde Router!');
@@ -71,7 +71,7 @@ io.on('connection', function (socket) {
         }
 
         //comprobar a cual nodo de datos pertenece el topic
-        //file = editJsonFile('./config/config.json'); //recargo el json
+
 
         if(socket_nodo_datos_con_topic == null){
             console.log("No existe el topic");

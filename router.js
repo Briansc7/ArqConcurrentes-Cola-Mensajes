@@ -6,8 +6,17 @@
 // 2) Consumidor --> reenvia al Orquestador el Topic al cual se quiere subscribir
 // 3) Orquestador --> recibe mensaje de respuesta con el Endpoint del nodo al cual se tiene que conectar el Consumidor
 
+//Tambien recibe mensajes de crear cola por http y lo reenvia al orquestador por socket.io
+
 var ClientManager = require('./utilities/clientManager.js');
 var config = require('./config/config.json');
+
+const editJsonFile = require("edit-json-file");
+let file = editJsonFile('./config/config.json');
+
+const process = require('process');
+var router_name = process.argv[2];
+var failover_port = getFailoverPort(router_name);
 
 var clientManager1 = new ClientManager(config.orquestador1_endpoint + config.orquestador1_port);
 var socket_orquestador1 = clientManager1.get_client_socket();
@@ -19,7 +28,6 @@ var orquestador2_conectado = false;
 
 var socket_orquestador_principal = null;
 
-
 var socket_consumidor_Map = new Map();
 
 var ServerManager = require('./utilities/serverManager.js');
@@ -28,20 +36,34 @@ const io = serverManager.get_io();
 const PORT = serverManager.get_port();
 const server = serverManager.get_server();
 
+var serverManagerFailover = new ServerManager(failover_port);
+const ioFailover = serverManagerFailover.get_io();
+const PORTFailover = serverManagerFailover.get_port();
+const serverFailover = serverManagerFailover.get_server();
+
+var clientFailoverPort= getFailoverPort(getFailoverRouterName(router_name));
+
+var clientManagerFailover = new ClientManager(config.router_endpoint + clientFailoverPort);
+var socket_router_failover = clientManagerFailover.get_client_socket();
+
+var es_router_principal = false;
+var esta_conectado_con_otro_router = false;
+
 var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
 const http_port = config.router_create_queue_port;
 const app_rest = serverManager.get_app_rest();
 
-app_rest.listen(http_port, () => {
-
-    console.log("Escuchando en el puerto "+ http_port + " para la API de creacion de colas");
+serverFailover.listen(PORTFailover, () => {
+    console.log("Escuchando en el puerto "+ PORTFailover + " para conectarse con el otro router por el failover");
 });
+
+
 
 app_rest.post('/queue', (req, res) => {
     //res.status(200).send({response: "API OK!" });
-    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxsize}, Nodo de datos: ${req.body.datanode}`);
+    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxSize}, Nodo de datos: ${req.body.datanode}`);
     //por el momento lo agregamos al nodo de datos 1
     var msg = {
         details: 'Pedido de creacion de cola',
@@ -70,11 +92,35 @@ app_rest.post('/queue', (req, res) => {
 
 });
 
-//corriendo el servidor
-server.listen(PORT, () => {
 
-    console.log(`Servidor del router escuchando en el puerto ${PORT}`)
-});
+var n = 2.5; //se espera 2.5 segundos a que se conecte con el otro router
+console.log("Intentando conectarse con el otro router...");
+
+setTimeout(function(){
+    // Despues de 2.5 segundos se comprueba si se conecto con el otro router
+    if(es_router_principal === false && esta_conectado_con_otro_router === false){
+        console.log("No se pudo conectar con el otro router, se establece este router como el principal");
+        es_router_principal = true;
+
+        //corriendo el servidor
+        server.listen(PORT, () => {
+            console.log(`Servidor del router escuchando en el puerto ${PORT}`);
+        });
+
+        app_rest.listen(http_port, () => {
+
+            console.log("Escuchando en el puerto "+ http_port + " para la API de creacion de colas");
+        });
+
+    }
+    else{
+
+    }
+
+}, n * 1000);
+// no se bloquea lo que sigue por el timer
+
+
 
 // Add a connect listener
 socket_orquestador1.on('connect', function (socket_orquestador) {
@@ -108,6 +154,34 @@ socket_orquestador2.on('disconnect', function (socket_orquestador) {
     decidir_socket_orquestador_principal();
 
 });
+
+socket_router_failover.on('connect', function (socket) {
+    console.log('Conexion de failover establecida');
+    esta_conectado_con_otro_router = true;
+    if(es_router_principal === false){
+        console.log('Se elige este router como failover');
+    }
+});
+
+socket_router_failover.on('disconnect', function (socket) {
+    console.log('Conexion de failover interrumpida');
+    esta_conectado_con_otro_router = false;
+
+    if(es_router_principal === false){
+        console.log('Se desconecto el router principal, se elige este router como el router principal');
+        server.listen(PORT, () => {
+            console.log(`Servidor del router escuchando en el puerto ${PORT}`)
+        });
+        app_rest.listen(http_port, () => {
+
+            console.log("Escuchando en el puerto "+ http_port + " para la API de creacion de colas");
+        });
+        es_router_principal = true;
+
+
+    }
+});
+
 
 function decidir_socket_orquestador_principal(){
     //se decide como orquestador principal el primero en conectarse
@@ -146,7 +220,7 @@ function decidir_socket_orquestador_principal(){
 
 
 io.on('connection', function (socket) {
-    console.log('Client ' + socket.id + ' connected!');
+    console.log('Cliente ' + socket.id + ' conectado!');
 
     socket.on('PRODUCER', function (msg) {
             console.log('Productor conectado!');
@@ -200,6 +274,11 @@ function devolverEndpointAlConsumidor(msg) {
     console.log("Endpoint de Orquestador recibido!");
     console.log(msg.endpoint);
 
+    if(socket_consumidor_Map.has(msg.socket_consumidor) === false){
+        console.log("Se recibio un endpoint para un socket que ya no es valido, no se puede reenviar el endpoint!");
+        return;
+    }
+
     var socket_consumidor = socket_consumidor_Map.get(msg.socket_consumidor);
     socket_consumidor_Map.delete(msg.socket_consumidor);
 
@@ -234,7 +313,7 @@ socket_orquestador2.on('ENDPOINT', function (msg) {
 function writePromise(msg, messageId, socket) {
 
     return new Promise((resolve, reject) => {
-        
+
         msgSender.send(msg, messageId, socket);
         resolve("Done");
 
@@ -243,4 +322,12 @@ function writePromise(msg, messageId, socket) {
     });
 
 
+}
+
+function getFailoverPort(name){
+    return file.get(name+".failover_port");
+}
+
+function getFailoverRouterName(name){
+    return file.get(name+".failover_router_name");
 }

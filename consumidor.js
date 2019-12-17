@@ -12,13 +12,18 @@ var socket_nodo_datos;
 var topicASubscribir;
 var msgSender = new MsgSender();
 
+var ya_se_recibio_endpoint = false;
+
 socket_router.on('connect', function (socket) {
     console.log('Consumidor conectado a Router!');
     topicASubscribir = process.argv[2];
-    subscribeToRouterPromise(topicASubscribir, "SUBSCRIBER", socket_router).then(resp => {
 
-        console.log("Consumidor se quiere subscribir a topic " + topicASubscribir);
-    });
+    if(ya_se_recibio_endpoint === false){
+        subscribeToRouterPromise(topicASubscribir, "SUBSCRIBER", socket_router).then(resp => {
+
+            console.log("Consumidor se quiere subscribir a topic " + topicASubscribir);
+        });
+    }
 
 
 
@@ -30,6 +35,7 @@ socket_router.on('connect', function (socket) {
 
 socket_router.on('ENDPOINT', function (endpoint) {
    console.log("Endpoint recibido de router: " + endpoint);
+    ya_se_recibio_endpoint = true;
     connectToNodePromise(endpoint).then(socket => {
 
         socket_nodo_datos = socket;
@@ -49,7 +55,7 @@ socket_router.on('ENDPOINT', function (endpoint) {
         });
 
           socket_nodo_datos.on('QUEUE_MESSAGE', function (msg) {
-                console.log('Mensaje recibido de Nodo!');
+                console.log('Mensaje recibido de Nodo de datos!');
                 console.log("Mensaje: "+msg);
                // console.log("Message: " + msg.details + " Topic: " + msg.topic);
                        
