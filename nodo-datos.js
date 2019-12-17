@@ -38,7 +38,7 @@ var consumerCount = 0;
 
 //corriendo el servidor
 server.listen(PORT, () => {
-    console.log(`Server running in http://localhost:${PORT}`)
+    console.log(`Servidor corriendo en http://localhost:${PORT}`)
 });
 
 serverReceiveReplica.listen(PORTReceiveReplica, () => {
@@ -47,7 +47,7 @@ serverReceiveReplica.listen(PORTReceiveReplica, () => {
 
 
 io.on('connection', function (socket) {
-    console.log('Client ' + socket.id + ' connected!');
+    console.log('Cliente ' + socket.id + ' conectado!');
 
     socket.on('PRODUCER-from-orquestador', function (msg) {
         console.log("Productor conectado desde Orquestador!");
@@ -57,10 +57,10 @@ io.on('connection', function (socket) {
             console.log("Mensaje escrito en Topic " + msg.topic);
             showTopicsAndReplicas();
             sendProductorReplica(msg);//se envia la replica al otro nodo de datos
-            if (queueMode == 'PubSub') {
+            if (queueMode === 'PubSub') {
 
                 return deliverMessagesPubSubPromise(msg.topic);
-            } else if (queueMode == 'RR') {
+            } else if (queueMode === 'RR') {
 
                 return deliverMessagesRoundRobinPromise(msg.topic);
             } else {
@@ -91,10 +91,10 @@ io.on('connection', function (socket) {
             subscribePromise(topic, socket).then((queueMode) => {
                 console.log("Consumidor subscripto a Topic " + topic);
                 showTopicsAndReplicas();
-                if (queueMode == 'PubSub') {
+                if (queueMode === 'PubSub') {
 
                     return deliverMessagesPubSubPromise(topic);
-                } else if (queueMode == 'RR') {
+                } else if (queueMode === 'RR') {
     
                     return deliverMessagesRoundRobinPromise(topic);
                 } else {
@@ -149,7 +149,7 @@ io.on('connection', function (socket) {
 });
 
 ioReceiveReplica.on('connection', function (socket) {
-    console.log('Client ' + socket.id + ' connected!');
+    console.log('Cliente ' + socket.id + ' conectado!');
     console.log('Preparado para recibir replicas de las colas del nodo de datos '+getReplicaName(node_name));
 
 

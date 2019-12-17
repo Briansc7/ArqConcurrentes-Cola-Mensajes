@@ -49,7 +49,7 @@ socket_router.on('ENDPOINT', function (endpoint) {
         });
 
           socket_nodo_datos.on('QUEUE_MESSAGE', function (msg) {
-                console.log('Mensaje recibido de Nodo!');
+                console.log('Mensaje recibido de Nodo de datos!');
                 console.log("Mensaje: "+msg);
                // console.log("Message: " + msg.details + " Topic: " + msg.topic);
                        
