@@ -49,13 +49,11 @@ El body debe ser un json como el siguiente:
 	
 	"mode": "RR",
 	
-	"maxSize": 10,
-	
-	"datanode": "nodo_datos1"	
+	"maxSize": 10	
 	
 }
 
-Siendo topic el nombre del tema para la cola, mode el modo de la cola que puede ser RR (round Robin) o PubSub, maxSize el limite de mensajes para la cola, y datanode el nombre del nodo de datos en donde se desea crear la cola.
+Siendo topic el nombre del tema para la cola, mode el modo de la cola que puede ser RR (round Robin) o PubSub, maxSize el limite de mensajes para la cola. El orquestador elige en qué datanode se crea la nueva cola según la cantidad de topics que tengan y el tamaño de los mismos.
 
 4) Levantar un consumidor especificando el topic al cual desea suscribirse.
 

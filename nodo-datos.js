@@ -222,7 +222,14 @@ socket_send_replica.on('connect', function (socket) {
 
         //los maps no se pueden encodear como json, por eso se lo transforma a array
         var topicsAEnviar = JSON.stringify(Array.from(topicsReplica));
-        var topicsReplicaAEnviar = JSON.stringify(Array.from(topics));
+
+        //borro los suscribers de los topics a enviar ya que no se pueden enviar sockets y ademas serian invalidos en caso de recuperacion ante desastres
+        var copiatopics = topics;
+        copiatopics.forEach((topic)=>{
+            topic.subscribers = [];
+        });
+
+        var topicsReplicaAEnviar = JSON.stringify(Array.from(copiatopics));
 
         var msg = {
             topics: topicsAEnviar,
@@ -498,6 +505,7 @@ function createQueuePromise(topic, mode, maxSize) {
             const fullTopics = file.get(node_name+".topics");//obtengo el array de topics actuales
             var stringFullTopics = JSON.stringify(fullTopics).slice(0, -1);//elimino el ] del final del string
             stringFullTopics = stringFullTopics + ","+JSON.stringify(newtopic)+"]"; //agrego el nuevo topic como string y agrego el } del final
+            file = editJsonFile('./config/config.json'); //recargo el json antes de editarlo
             file.set(node_name+".topics",JSON.parse(stringFullTopics)); //guardo el nuevo array de topics en disco
             file.save(); //ejecuto la grabacion en disco
             resolve(newtopic);

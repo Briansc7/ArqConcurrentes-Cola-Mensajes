@@ -35,6 +35,8 @@ var topics;
 var datanodeEndpoints;
 var datanodeNames = ["nodo_datos1", "nodo_datos2"];
 var topicsNames = [];
+var size_data_node1 = 0;
+var size_data_node2 = 0;
 reloadConfigToMemory();
 
 
@@ -125,8 +127,8 @@ io.on('connection', function (socket) {
     socket.on('CREATE-QUEUE', (pedido_queue) => {
 
 
-        console.log(`Recibido pedido de creacion de cola, Topic: ${pedido_queue.topic}, Modo: ${pedido_queue.mode}, MaxSize: ${pedido_queue.maxSize}, Nodo de datos: ${pedido_queue.datanode}`);
-        //por el momento lo agregamos al nodo de datos 1
+        console.log(`Recibido pedido de creacion de cola, Topic: ${pedido_queue.topic}, Modo: ${pedido_queue.mode}, MaxSize: ${pedido_queue.maxSize}`);
+
         var msg = {
             details: 'Pedido de creacion de cola',
             topic: pedido_queue.topic,
@@ -135,18 +137,18 @@ io.on('connection', function (socket) {
 
         };
 
-        //compruebo que el datanode es valido
-        if(datanodeNames.includes(pedido_queue.datanode) === false){
-            console.log("datanode invalido");
-            return;
-        }
-
+        //Se elige crear la cola en el nodo con menor carga (considera la cantidad de topics que tiene y el tamanio de los mismos)
         var socket_nodo_datos = null;
-        if (pedido_queue.datanode === "nodo_datos1")
+
+        console.log("size_data_node1: "+size_data_node1);
+        console.log("size_data_node2: "+size_data_node2);
+
+        if(size_data_node1 <= size_data_node2)
             socket_nodo_datos = socket_nodo_datos1;
-        if (pedido_queue.datanode === "nodo_datos2")
+        else
             socket_nodo_datos = socket_nodo_datos2;
-        if (socket_nodo_datos != null && topics.get(pedido_queue.topic)==null){
+
+        if (topics.get(pedido_queue.topic)==null){
             writePromise(msg,'CREATE-QUEUE',socket_nodo_datos).then(() => {
                 console.log("Pedido de creacion de cola enviado al nodo de datos");//se podria esperar a tener una respuesta del nodo de datos para darlo por exitoso
                 topics.set(pedido_queue.topic, pedido_queue.datanode);
@@ -157,7 +159,7 @@ io.on('connection', function (socket) {
             });
         }
         else{
-            console.log("Nodo de datos invalido o topic ya existe");
+            console.log("No se crea la cola porque el topic ya existe");
         }
 
     });
@@ -206,11 +208,6 @@ function writePromise(msg, messageId, socket) {
     });
 
 
-}
-
-
-function get_direction_queue(topic) {
-    return hashmap_queue[topic];
 }
 
 
@@ -287,6 +284,7 @@ function reloadConfigToMemory(){
     topics = initTopics();
     datanodeEndpoints = initDatanodeEnpoints();
     reloadTopicsNames();
+    reloadDataNodesSize();
 
 }
 
@@ -300,5 +298,25 @@ function reloadTopicsNames(){
             );
         }
     )
+}
+
+function reloadDataNodesSize(){
+    //determina el tamanio total de los datanode segun cantidad de topics y tamanio maximo de los mismos
+    //sirve para saber cual es el menor datanode y redireccionar la creacion de una nueva cola a dicho nodo
+    size_data_node1 = 0;
+    size_data_node2 = 0;
+    getDatanodeTopicsFromConfig("nodo_datos1").forEach(topic => {
+            size_data_node1 += topic.maxSize;
+        }
+
+    );
+    getDatanodeTopicsFromConfig("nodo_datos2").forEach(topic => {
+            size_data_node2 += topic.maxSize;
+        }
+
+    );
+    console.log("size colas recargadas");
+    console.log("size_data_node1: "+size_data_node1);
+    console.log("size_data_node2: "+size_data_node2);
 }
 
