@@ -63,13 +63,14 @@ serverFailover.listen(PORTFailover, () => {
 
 app_rest.post('/queue', (req, res) => {
     //res.status(200).send({response: "API OK!" });
-    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxSize}`);
+    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxSize}, Transactional: ${req.body.transactional}`);
     //por el momento lo agregamos al nodo de datos 1
     var msg = {
         details: 'Pedido de creacion de cola',
         topic: req.body.topic,
         mode: req.body.mode,
-        maxSize: req.body.maxSize
+        maxSize: req.body.maxSize,
+        transactional: req.body.transactional
 
     };
 

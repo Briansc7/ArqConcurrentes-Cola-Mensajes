@@ -123,10 +123,10 @@ io.on('connection', function (socket) {
 
     socket.on('CREATE-QUEUE', (request) => {
 
-        console.log("Pedido de creacion de cola recibido, con Topic: " + request.topic+", modo: "+ request.mode + " y maxzise: " + request.maxSize);
+        console.log("Pedido de creacion de cola recibido, con Topic: " + request.topic+", modo: "+ request.mode + ", maxzise: " + request.maxSize + " y transactional: "+request.transactional);
         // aca registrar al socket del Consumidor con el topic
 
-        createQueuePromise(request.topic, request.mode, request.maxSize).then((resp) => {
+        createQueuePromise(request.topic, request.mode, request.maxSize, request.transactional).then((resp) => {
             console.log("Creada cola con topic " + resp.topic+" y modo: "+resp.mode);
             showTopicsAndReplicas();
             sendCreateQueueReplica(request);
@@ -189,9 +189,9 @@ ioReceiveReplica.on('connection', function (socket) {
     });
 
     socket.on('CREATE-QUEUE-REPLICA', (request) => {
-        console.log("Pedido de creacion de cola en replica, con Topic: " + request.topic+", modo: "+ request.mode + " y maxzise: " + request.maxSize);
+        console.log("Pedido de creacion de cola en replica, con Topic: " + request.topic+", modo: "+ request.mode + ", maxzise: " + request.maxSize+" y transactional: "+request.transactional);
 
-        createQueueReplicaPromise(request.topic, request.mode, request.maxSize).then((resp) => {
+        createQueueReplicaPromise(request.topic, request.mode, request.maxSize, request.transactional).then((resp) => {
             console.log("Creada cola en replica con topic " + resp.topic+" y modo: "+resp.mode);
             showTopicsAndReplicas();
 
@@ -515,7 +515,7 @@ function sendMessagePromise(msg, messageId, socket) {
 
 }
 
-function createQueuePromise(topic, mode, maxSize) {
+function createQueuePromise(topic, mode, maxSize, transactional) {
 
     return new Promise((resolve, reject) => {
         var topicExist = topics.get(topic);
@@ -524,12 +524,14 @@ function createQueuePromise(topic, mode, maxSize) {
                 "queue": [],
                 "mode": mode,
                 "maxSize": maxSize,
+                "transactional": transactional,
                 "subscribers": []
             });
             const newtopic = {
                 topic: topic,
                 mode: mode,
-                maxSize: maxSize
+                maxSize: maxSize,
+                transactional: transactional
             };
             //ahora se edita el json en disco
             const fullTopics = file.get(node_name+".topics");//obtengo el array de topics actuales
@@ -546,7 +548,7 @@ function createQueuePromise(topic, mode, maxSize) {
     });
 }
 
-function createQueueReplicaPromise(topic, mode, maxSize) {
+function createQueueReplicaPromise(topic, mode, maxSize, transactional) {
 
     return new Promise((resolve, reject) => {
         var topicExist = topicsReplica.get(topic);
@@ -555,12 +557,14 @@ function createQueueReplicaPromise(topic, mode, maxSize) {
                 "queue": [],
                 "mode": mode,
                 "maxSize": maxSize,
+                "transactional": transactional,
                 "subscribers": []
             });
             const newtopic = {
                 topic: topic,
                 mode: mode,
-                maxSize: maxSize
+                maxSize: maxSize,
+                transactional: transactional
             };
 
             resolve(newtopic);
@@ -582,6 +586,7 @@ function initTopics(nodeName) {
             "queue": [],
             "mode": queue.mode,
             "maxSize": queue.maxSize,
+            "transactional": queue.transactional,
             "subscribers": []
         });
 

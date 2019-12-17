@@ -127,13 +127,14 @@ io.on('connection', function (socket) {
     socket.on('CREATE-QUEUE', (pedido_queue) => {
 
 
-        console.log(`Recibido pedido de creacion de cola, Topic: ${pedido_queue.topic}, Modo: ${pedido_queue.mode}, MaxSize: ${pedido_queue.maxSize}`);
+        console.log(`Recibido pedido de creacion de cola, Topic: ${pedido_queue.topic}, Modo: ${pedido_queue.mode}, MaxSize: ${pedido_queue.maxSize}, Transactional: ${pedido_queue.transactional}`);
 
         var msg = {
             details: 'Pedido de creacion de cola',
             topic: pedido_queue.topic,
             mode: pedido_queue.mode,
             maxSize: pedido_queue.maxSize,
+            transactional: pedido_queue.transactional
 
         };
 
