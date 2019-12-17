@@ -13,7 +13,11 @@ http://arquitecturas-concurrentes.github.io/guias/node/
 0) Si es la primera vez, clonar este repositorio y ejecutar el comando `npm install` para instalar las dependencias necesarias.
 
 Levantar los componentes en distintas consolas:
-1) Levantar el Router con el comando `node router.js`
+1) Levantar los Routers en distintas consolas con los comandos: 
+
+`node router.js router1`
+
+`node router.js router2`
 
 2) Levantar los orquestadores en distintas consolas con los comandos:
 
@@ -66,6 +70,9 @@ Para poder mandar mensajes al topic Alerts, el comando sería el siguiente:
 `node productor.js Alerts`
 
 Luego se puede enviar todos los mensajes que se desee escribiendo por consola el mensaje y presionando enter para enviarlo.
+
+## Router Failover
+Cuando se levanta un router, intenta conectarse con el otro router. En caso de no poder conectarse, se lo elige como router principal y se pone a escuchar para atender los pedidos. Al levantar el otro router, al lograr conectarse y como ya hay un router principal, entonces se lo elige como router de failover. Cuando se cae el router principal, el router de failover detecta la caída y se lo elige como nuevo router principal para que pueda seguir atendiendo los pedidos. Cuando el router caído regresa, detecta que ya hay un router principal y es elegido como router de failover.
 
 ## Tolerancia a fallos del orquestador
 El primer orquestador en conectarse al router es elegido como orquestador principal. Toda la comunicación del router va al orquestador principal solamente. En caso de caida del orquestador principal, el otro orquestador que esta conectado pasa a ser el principal. Cuando esto ocurre, actualiza sus variables en memoria para poder empezar a atender los pedidos.
