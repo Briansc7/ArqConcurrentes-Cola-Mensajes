@@ -63,7 +63,7 @@ serverFailover.listen(PORTFailover, () => {
 
 app_rest.post('/queue', (req, res) => {
     //res.status(200).send({response: "API OK!" });
-    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxsize}, Nodo de datos: ${req.body.datanode}`);
+    console.log(`Recibido pedido de creacion de cola, Topic: ${req.body.topic}, Modo: ${req.body.mode}, MaxSize: ${req.body.maxSize}, Nodo de datos: ${req.body.datanode}`);
     //por el momento lo agregamos al nodo de datos 1
     var msg = {
         details: 'Pedido de creacion de cola',
@@ -273,6 +273,11 @@ io.on('connection', function (socket) {
 function devolverEndpointAlConsumidor(msg) {
     console.log("Endpoint de Orquestador recibido!");
     console.log(msg.endpoint);
+
+    if(socket_consumidor_Map.has(msg.socket_consumidor) === false){
+        console.log("Se recibio un endpoint para un socket que ya no es valido, no se puede reenviar el endpoint!");
+        return;
+    }
 
     var socket_consumidor = socket_consumidor_Map.get(msg.socket_consumidor);
     socket_consumidor_Map.delete(msg.socket_consumidor);
