@@ -143,6 +143,28 @@ io.on('connection', function (socket) {
         });
 
     }));
+    
+       socket.on('CONSUMER-ACK', function (msg) {
+        // mensaje de ACK recibido de algun consumidor. Si el Topic esta en modo Transactional , entonces busco el mensaje y lo borro
+        // consumidor envia el mensaje que consumio con el topic
+         console.log("Mensaje de ACK recibido!");
+         var topic = topics.get(msg.topic);
+        
+            if (topic.transactional) {
+           // busco mensaje en Queue y lo borro
+                 var index = topic.queue.indexOf(msg.message);
+                 if (index != null) {
+                    topic.queue.splice(index, 1);
+                    console.log("Mensaje "+msg.message+ " eliminado de Topic "+msg.topic+ " en modo Transaccional!");
+                 } else {
+                   console.log("Error al consumir mensaje");
+                 }
+                
+           
+
+         }
+
+    });
 
 
 
@@ -389,6 +411,7 @@ function deliverMessagesPubSubPromise(topic) {
 
         var msgQueue = topics.get(topic).queue;
         var subscribers = topics.get(topic).subscribers;
+        var transactional = topics.get(topic).transactional;
 
         if (subscribers.length > 0) {
 
@@ -408,7 +431,10 @@ function deliverMessagesPubSubPromise(topic) {
 
             });
 
-        topics.get(topic).queue = []; // borro mensajes una vez que se enviaron todos, siempre y cuando haya consumidores subscriptos, sino no hace nada
+         if (!transactional) {
+                topics.get(topic).queue = []; // borro mensajes una vez que se enviaron todos, siempre y cuando haya consumidores subscriptos, sino no hace nada
+                console.log("Todos los mensajes fueron consumidos en modo No Transaccional!");
+            }
 
         replicarColaVacia(topic);
 
@@ -436,6 +462,7 @@ function deliverMessagesRoundRobinPromise(topic) {
 
         var msgQueue = topics.get(topic).queue;
         var subscribers = topics.get(topic).subscribers;
+        var transactional = topics.get(topic).transactional;
 
         if (subscribers.length > 0) {
 
@@ -456,7 +483,10 @@ function deliverMessagesRoundRobinPromise(topic) {
 
              });
 
-            topics.get(topic).queue = [];
+               if (!transactional) {
+                topics.get(topic).queue = [];
+                console.log("Todos los mensajes fueron consumidos en modo No Transaccional!");
+            }
 
             replicarColaVacia(topic);
 
