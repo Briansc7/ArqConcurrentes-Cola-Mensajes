@@ -59,11 +59,13 @@ Para suscribirse a Alerts, el comando sería el siguiente:
 
 `node consumidor.js Alerts`
 
-5) Levantar un productor y mandar un mensaje a un topic:
+5) Levantar un productor y mandar mensajes a un topic:
 
-Para mandar el mensaje Hola al topic Alerts, el comando sería el siguiente:
+Para poder mandar mensajes al topic Alerts, el comando sería el siguiente:
 
-`node productor.js Alerts Hola`
+`node productor.js Alerts`
+
+Luego se puede enviar todos los mensajes que se desee escribiendo por consola el mensaje y presionando enter para enviarlo.
 
 ## Tolerancia a fallos del orquestador
 El primer orquestador en conectarse al router es elegido como orquestador principal. Toda la comunicación del router va al orquestador principal solamente. En caso de caida del orquestador principal, el otro orquestador que esta conectado pasa a ser el principal. Cuando esto ocurre, actualiza sus variables en memoria para poder empezar a atender los pedidos.

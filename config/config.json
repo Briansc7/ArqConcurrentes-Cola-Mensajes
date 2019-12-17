@@ -1,6 +1,11 @@
 {
   "router_port": 3000,
   "router_endpoint": "http://localhost:",
+  "router_create_queue_port": 8080,
+  "router_failover": {
+    "port1": 4000,
+    "port2": 4001
+  },
   "orquestador1_port": 3001,
   "orquestador1_endpoint": "http://localhost:",
   "orquestador2_port": 3002,

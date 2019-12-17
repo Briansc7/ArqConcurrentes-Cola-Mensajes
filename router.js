@@ -20,7 +20,7 @@ var orquestador2_conectado = false;
 var socket_orquestador_principal = null;
 
 
-var socket_consumidor;
+var socket_consumidor_Map = new Map();
 
 var ServerManager = require('./utilities/serverManager.js');
 var serverManager = new ServerManager(config.router_port);
@@ -31,12 +31,12 @@ const server = serverManager.get_server();
 var MsgSender = require('./utilities/msgSender.js');
 var msgSender = new MsgSender();
 
-const http_port = 8080;
+const http_port = config.router_create_queue_port;
 const app_rest = serverManager.get_app_rest();
 
 app_rest.listen(http_port, () => {
 
-    console.log("Escuchando en el 8080 para API");
+    console.log("Escuchando en el puerto "+ http_port + " para la API de creacion de colas");
 });
 
 app_rest.post('/queue', (req, res) => {
@@ -52,7 +52,7 @@ app_rest.post('/queue', (req, res) => {
 
     };
 
-    if (req.body.datanode == "nodo_datos1" || req.body.datanode == "nodo_datos2" ){
+    if (req.body.datanode === "nodo_datos1" || req.body.datanode === "nodo_datos2" ){
         writePromise(msg,'CREATE-QUEUE',socket_orquestador_principal).then(() => {
             console.log("Pedido de creacion de cola enviado al orquestador");//se podria esperar a tener una respuesta del nodo de datos para darlo por exitoso
             res.status(200).send(req.body);
@@ -73,7 +73,7 @@ app_rest.post('/queue', (req, res) => {
 //corriendo el servidor
 server.listen(PORT, () => {
 
-    console.log(`Server running in http://localhost:${PORT}`)
+    console.log(`Servidor del router escuchando en el puerto ${PORT}`)
 });
 
 // Add a connect listener
@@ -169,9 +169,15 @@ io.on('connection', function (socket) {
             console.log("Consumidor conectado!");
             console.log("Topic: " + topic);
 
-            socket_consumidor = socket;//estoy hay que mejorarlo, quizas ponerlo en el mensaje que viaja para saber a quien responder
+            //guardo en un map el socket al cual responder, y solo se manda el id del socket en el mensaje
+            socket_consumidor_Map.set(socket.id, socket);
+
+            var msg = {
+                topic: topic,
+                socket_consumidor: socket.id
+            };
         
-            writePromise(topic, 'SUBSCRIBER-from-router', socket_orquestador_principal).then((resp) => {
+            writePromise(msg, 'SUBSCRIBER-from-router', socket_orquestador_principal).then((resp) => {
                 console.log("Mensaje de suscripcion enviado al orquestador");
 
             }).catch((err) => {
@@ -190,36 +196,33 @@ io.on('connection', function (socket) {
 });
 
 
-
-socket_orquestador1.on('ENDPOINT', function (endpoint) {
-
-
+function devolverEndpointAlConsumidor(msg) {
     console.log("Endpoint de Orquestador recibido!");
-    console.log(endpoint);
+    console.log(msg.endpoint);
 
-    writePromise(endpoint, 'ENDPOINT', socket_consumidor).then((resp) => {
+    var socket_consumidor = socket_consumidor_Map.get(msg.socket_consumidor);
+    socket_consumidor_Map.delete(msg.socket_consumidor);
+
+    writePromise(msg.endpoint, 'ENDPOINT', socket_consumidor).then((resp) => {
         console.log("Endpoint enviado al Consumidor!");
 
     }).catch((err) => {
 
         console.log(err);
     })
+}
+
+socket_orquestador1.on('ENDPOINT', function (msg) {
+
+
+    devolverEndpointAlConsumidor(msg);
 
 });
 
-socket_orquestador2.on('ENDPOINT', function (endpoint) {
+socket_orquestador2.on('ENDPOINT', function (msg) {
 
 
-    console.log("Endpoint de Orquestador recibido!");
-    console.log(endpoint);
-
-    writePromise(endpoint, 'ENDPOINT', socket_consumidor).then((resp) => {
-        console.log("Endpoint enviado al Consumidor!");
-
-    }).catch((err) => {
-
-        console.log(err);
-    })
+    devolverEndpointAlConsumidor(msg);
 
 });
 
