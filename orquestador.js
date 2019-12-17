@@ -95,14 +95,18 @@ io.on('connection', function (socket) {
     });
 
 
-        socket.on('SUBSCRIBER-from-router', (topic) => {
+        socket.on('SUBSCRIBER-from-router', (msg) => {
             console.log("Consumidor conectado desde Router!");
-            console.log("Topic: " + topic);
+            console.log("Topic: " + msg.topic);
             // aca devolver el Endpoint del Nodo al Router para que este se lo devuelva al Consumer
-            var endpoint = getDatanodeEnpointOfTopic(topic);
+            var endpoint = getDatanodeEnpointOfTopic(msg.topic);
             console.log(endpoint);
+            var msgReply = {
+                endpoint: endpoint,
+                socket_consumidor: msg.socket_consumidor
+            };
             if (endpoint != null) {
-            writePromise(endpoint, 'ENDPOINT', socket).then((resp) => {
+            writePromise(msgReply, 'ENDPOINT', socket).then((resp) => {
                 console.log("Mensaje de retorno enviado al Router con el Endpoint");
 
             }).catch((err) => {
